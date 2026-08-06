@@ -157,7 +157,6 @@ def _apply_grid(container, cx, cy, cw, ch):
     if not grid_children:
         return
 
-    # 1. Discover grid dimensions
     max_row = max(c.layout_params['row'] + c.layout_params['rowspan'] - 1 for c in grid_children)
     max_col = max(c.layout_params['col'] + c.layout_params['colspan'] - 1 for c in grid_children)
 
@@ -166,7 +165,6 @@ def _apply_grid(container, cx, cy, cw, ch):
     row_weights = {r: 0 for r in range(max_row + 1)}
     col_weights = {c: 0 for c in range(max_col + 1)}
 
-    # 2. Intrinsic Sizing & Weights
     for child in grid_children:
         p = child.layout_params
         r, c_idx = p['row'], p['col']
@@ -175,13 +173,11 @@ def _apply_grid(container, cx, cy, cw, ch):
         row_weights[r] = max(row_weights[r], p.get('weighty', 0))
         col_weights[c_idx] = max(col_weights[c_idx], p.get('weightx', 0))
 
-        # Establish base sizes from single-cell widgets
         if rs == 1:
             row_heights[r] = max(row_heights[r], child.req_height + (p['pady'] * 2))
         if cs == 1:
             col_widths[c_idx] = max(col_widths[c_idx], child.req_width + (p['padx'] * 2))
 
-    # 3. Distribute extra space based on weights
     extra_w = max(0, cw - sum(col_widths.values()))
     extra_h = max(0, ch - sum(row_heights.values()))
     tot_weight_x = sum(col_weights.values())
@@ -194,14 +190,12 @@ def _apply_grid(container, cx, cy, cw, ch):
         for r in row_heights:
             row_heights[r] += int(extra_h * (row_weights[r] / tot_weight_y))
 
-    # 4. Generate absolute cell coordinates
     row_y, col_x = {0: cy}, {0: cx}
     for r in range(1, max_row + 1):
         row_y[r] = row_y[r - 1] + row_heights.get(r - 1, 0)
     for c_idx in range(1, max_col + 1):
         col_x[c_idx] = col_x[c_idx - 1] + col_widths.get(c_idx - 1, 0)
 
-    # 5. Place widgets within assigned cells
     for child in grid_children:
         p = child.layout_params
         r, c_idx, sticky = p['row'], p['col'], p['sticky']
@@ -227,13 +221,162 @@ def _apply_grid(container, cx, cy, cw, ch):
 
 
 def _apply_pack(container, cx, cy, cw, ch):
-    """Standard shrinking-cavity sequential layout."""
+    """
+    Two-Pass Pack Geometry Calculation:
+    Pass 1: Pre-calculate total requested dimensions and leftover space for expanders.
+    Pass 2: Allocate parcels and apply fill/alignment constraints.
+    """
     pack_children = [c for c in container.children if c.layout_params.get('type') == 'pack']
-    if not pack_children: return
-    # ... [Keep your exact existing PASS 1 and PASS 2 code here from the previous step] ...
-    # (Omitted here for brevity, paste the _apply_pack we wrote earlier)
+    if not pack_children:
+        return
+
+    horiz_children = [c for c in pack_children if c.layout_params.get('side') in (LEFT, RIGHT)]
+    vert_children = [c for c in pack_children if c.layout_params.get('side') in (TOP, BOTTOM)]
+
+    total_req_w = sum(c.req_width + (c.layout_params.get('padx', 0) * 2) for c in horiz_children)
+    exp_horiz_count = sum(1 for c in horiz_children if c.layout_params.get('expand', False))
+    extra_w_total = max(0, cw - total_req_w)
+    extra_w_per_exp = (extra_w_total // exp_horiz_count) if exp_horiz_count > 0 else 0
+
+    total_req_h = sum(c.req_height + (c.layout_params.get('pady', 0) * 2) for c in vert_children)
+    exp_vert_count = sum(1 for c in vert_children if c.layout_params.get('expand', False))
+    extra_h_total = max(0, ch - total_req_h)
+    extra_h_per_exp = (extra_h_total // exp_vert_count) if exp_vert_count > 0 else 0
+
+    rem_x, rem_y = cx, cy
+    rem_w, rem_h = max(0, cw), max(0, ch)
+
+    for child in pack_children:
+        params = child.layout_params
+        side = params.get('side', TOP)
+        fill = params.get('fill', FILL_NONE)
+        expand = params.get('expand', False)
+        padx = params.get('padx', 0)
+        pady = params.get('pady', 0)
+        anchor = params.get('anchor', CENTER)
+
+        base_req_w = child.req_width + (padx * 2)
+        base_req_h = child.req_height + (pady * 2)
+
+        alloc_x, alloc_y, alloc_w, alloc_h = 0, 0, 0, 0
+
+        if side == TOP:
+            parcel_h = base_req_h + (extra_h_per_exp if expand else 0)
+            alloc_w = rem_w
+            alloc_h = min(rem_h, parcel_h)
+            alloc_x = rem_x
+            alloc_y = rem_y
+
+            rem_y += alloc_h
+            rem_h = max(0, rem_h - alloc_h)
+
+        elif side == BOTTOM:
+            parcel_h = base_req_h + (extra_h_per_exp if expand else 0)
+            alloc_w = rem_w
+            alloc_h = min(rem_h, parcel_h)
+            alloc_x = rem_x
+            alloc_y = rem_y + rem_h - alloc_h
+
+            rem_h = max(0, rem_h - alloc_h)
+
+        elif side == LEFT:
+            parcel_w = base_req_w + (extra_w_per_exp if expand else 0)
+            alloc_w = min(rem_w, parcel_w)
+            alloc_h = rem_h
+            alloc_x = rem_x
+            alloc_y = rem_y
+
+            rem_x += alloc_w
+            rem_w = max(0, rem_w - alloc_w)
+
+        elif side == RIGHT:
+            parcel_w = base_req_w + (extra_w_per_exp if expand else 0)
+            alloc_w = min(rem_w, parcel_w)
+            alloc_h = rem_h
+            alloc_x = rem_x + rem_w - alloc_w
+            alloc_y = rem_y
+
+            rem_w = max(0, rem_w - alloc_w)
+
+        final_w = child.req_width
+        final_h = child.req_height
+
+        if fill in (FILL_X, FILL_BOTH):
+            final_w = max(1, alloc_w - (padx * 2))
+        if fill in (FILL_Y, FILL_BOTH):
+            final_h = max(1, alloc_h - (pady * 2))
+
+        final_w = min(final_w, max(1, alloc_w - (padx * 2)))
+        final_h = min(final_h, max(1, alloc_h - (pady * 2)))
+
+        float_w = max(0, alloc_w - final_w - (padx * 2))
+        float_h = max(0, alloc_h - final_h - (pady * 2))
+
+        if anchor in (TOPLEFT, LEFT, BOTTOMLEFT):
+            offset_x = 0
+        elif anchor in (TOPRIGHT, RIGHT, BOTTOMRIGHT):
+            offset_x = float_w
+        else:
+            offset_x = float_w // 2
+
+        if anchor in (TOPLEFT, TOP, TOPRIGHT):
+            offset_y = 0
+        elif anchor in (BOTTOMLEFT, BOTTOM, BOTTOMRIGHT):
+            offset_y = float_h
+        else:
+            offset_y = float_h // 2
+
+        final_x = alloc_x + padx + offset_x
+        final_y = alloc_y + pady + offset_y
+
+        child.update_geometry(final_x, final_y, final_w, final_h)
+
 
 def _apply_place(container, cx, cy, cw, ch):
-    """Absolute math-based coordinate placement."""
+    """Applies absolute and relative placement for placed children."""
     place_children = [c for c in container.children if c.layout_params.get('type') == 'place']
-    # ... [Keep your exact existing _apply_place code here] ...
+
+    for child in place_children:
+        params = child.layout_params
+        anchor = params.get('anchor', TOPLEFT)
+
+        final_w = child.req_width
+        if params['width'] is not None:
+            final_w = params['width']
+        elif params['relwidth'] > 0:
+            final_w = int(cw * params['relwidth'])
+
+        final_h = child.req_height
+        if params['height'] is not None:
+            final_h = params['height']
+        elif params['relheight'] > 0:
+            final_h = int(ch * params['relheight'])
+
+        base_x = cx + params['x']
+        if params['relx'] > 0:
+            base_x += int(cw * params['relx'])
+
+        base_y = cy + params['y']
+        if params['rely'] > 0:
+            base_y += int(ch * params['rely'])
+
+        if anchor in (TOPRIGHT, RIGHT, BOTTOMRIGHT):
+            final_x = base_x - final_w
+        elif anchor in (CENTER, TOP, BOTTOM):
+            final_x = base_x - (final_w // 2)
+        else:
+            final_x = base_x
+
+        if anchor in (BOTTOMLEFT, BOTTOM, BOTTOMRIGHT):
+            final_y = base_y - final_h
+        elif anchor in (CENTER, LEFT, RIGHT):
+            final_y = base_y - (final_h // 2)
+        else:
+            final_y = base_y
+
+        child.update_geometry(
+            max(0, final_x),
+            max(0, final_y),
+            max(1, final_w),
+            max(1, final_h)
+        )
