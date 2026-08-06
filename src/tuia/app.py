@@ -3,7 +3,6 @@ tuia.app - Core engine and lifecycle management for the TUI.
 """
 import curses
 import contextlib
-import sys
 import time
 
 
@@ -33,11 +32,6 @@ class TUIApp:
             curses.start_color()
             curses.use_default_colors()
 
-        # Disable DEC Auto-Wrap (Mode 7 Reset)
-        # Prevents terminal emulator from reflowing lines past right border during resize
-        sys.stdout.write("\x1b[?7l")
-        sys.stdout.flush()
-
     def set_root(self, frame):
         """Sets the root Frame that contains all other widgets."""
         self.root_frame = frame
@@ -58,21 +52,16 @@ class TUIApp:
         # Trigger initial layout calculations
         self.root_frame._resize_to_terminal(self.stdscr)
 
-        try:
-            while self.running:
-                loop_start = time.time()
+        while self.running:
+            loop_start = time.time()
 
-                self._handle_input()
-                self._update()
-                self._render()
+            self._handle_input()
+            self._update()
+            self._render()
 
-                elapsed = time.time() - loop_start
-                if elapsed < self._frame_time:
-                    time.sleep(self._frame_time - elapsed)
-        finally:
-            # Re-enable DEC Auto-Wrap (Mode 7 Set) before curses tears down
-            sys.stdout.write("\x1b[?7h")
-            sys.stdout.flush()
+            elapsed = time.time() - loop_start
+            if elapsed < self._frame_time:
+                time.sleep(self._frame_time - elapsed)
 
     def _handle_input(self):
         """Fetches input and passes it to the root frame for event bubbling."""
@@ -86,11 +75,10 @@ class TUIApp:
     def _update(self):
         """Checks for terminal resize events and triggers layout recalculation."""
         if curses.is_term_resized(curses.LINES, curses.COLS):
+
             curses.update_lines_cols()
             curses.resizeterm(curses.LINES, curses.COLS)
-            
-            # Force physical screen cache invalidation to eliminate 1-frame artifacts
-            self.stdscr.clearok(True)
+
             self.stdscr.clear()
 
             max_y, max_x = self.stdscr.getmaxyx()
@@ -117,19 +105,12 @@ class TUIApp:
     @contextlib.contextmanager
     def suspend_for_handoff(self):
         """Context manager to handoff the screen to an external TUI app."""
-        # Restore auto-wrap while handing off control
-        sys.stdout.write("\x1b[?7h")
-        sys.stdout.flush()
 
         curses.def_prog_mode()
         curses.endwin()
         try:
             yield
         finally:
-            # Re-disable auto-wrap when returning to tuify
-            sys.stdout.write("\x1b[?7l")
-            sys.stdout.flush()
-
             self.stdscr.clear()
             curses.reset_prog_mode()
             self.stdscr.refresh()
