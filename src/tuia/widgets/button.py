@@ -4,11 +4,14 @@ tuia.widgets.button - Interactive button widget.
 import curses
 from tuia.base import Widget
 
+
 class Button(Widget):
     """An interactive button widget with focus states and click callbacks."""
-    def __init__(self, parent=None, text="Button", command=None, x=0, y=0, width=12, height=3, z_index=0):
+
+    def __init__(self, parent=None, text="Button", focused_text=None, command=None, x=0, y=0, width=12, height=3, z_index=0):
         super().__init__(parent=parent, x=x, y=y, width=width, height=height, z_index=z_index)
         self.text = text
+        self.focused_text = focused_text or text
         self.command = command
         self.focused = False
 
@@ -27,9 +30,9 @@ class Button(Widget):
             return
 
         attr = curses.A_REVERSE if self.focused else curses.A_NORMAL
-        label = f"[ {self.text} ]"
+        label = self.focused_text if self.focused else self.text
         if len(label) > self.width:
-            label = label[:max(1, self.width - 2)] + "]"
+            label = label[:max(1, self.width)]
 
         start_x = max(0, (self.width - len(label)) // 2)
         start_y = max(0, self.height // 2)

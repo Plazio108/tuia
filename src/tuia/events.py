@@ -3,10 +3,12 @@ tuia.events - Focus management and keyboard navigation routing.
 """
 import curses
 
+
 class FocusManager:
     """
     Manages interactive widget focus switching via Tab and Shift-Tab.
     """
+
     def __init__(self, root_frame):
         self.root_frame = root_frame
         self.focused_widget = None
@@ -56,7 +58,7 @@ class FocusManager:
         """Unfocuses currently focused widget and sets focus to the new target."""
         if self.focused_widget and self.focused_widget != target_widget:
             self.focused_widget.blur()
-            
+
         self.focused_widget = target_widget
         if self.focused_widget:
             self.focused_widget.focus()
