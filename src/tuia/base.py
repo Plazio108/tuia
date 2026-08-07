@@ -4,10 +4,12 @@ tuia.base - Base Widget class defining geometry, visibility, and Z-indexing.
 import curses
 import abc
 
+
 class Widget(abc.ABC):
     """
     Abstract base class for all UI components in the engine.
     """
+
     def __init__(self, parent=None, x=0, y=0, width=10, height=3, z_index=0):
         self.children = []
         self.x = x
@@ -16,7 +18,7 @@ class Widget(abc.ABC):
         self.height = max(1, height)
         self.req_width = max(1, width)
         self.req_height = max(1, height)
-        
+
         self.layout_params = {}
         self._z_index = z_index
         self.visible = True
@@ -76,7 +78,8 @@ class Widget(abc.ABC):
             del self.window
 
         try:
-            self.window = curses.newwin(self.height, self.width, self.y, self.x)
+            self.window = curses.newwin(
+                self.height, self.width, self.y, self.x)
         except curses.error:
             self.window = None
 
@@ -100,9 +103,26 @@ class Widget(abc.ABC):
             child.render()
 
     def bind(self, event_type, callback):
+        """Registers an event listener callback for a given event type."""
         if event_type not in self.listeners:
             self.listeners[event_type] = []
-        self.listeners[event_type].append(callback)
+        if callback not in self.listeners[event_type]:
+            self.listeners[event_type].append(callback)
+
+    def unbind(self, event_type, callback=None):
+        """
+        Removes an event listener callback. 
+        If callback is None, removes all listeners for the given event_type.
+        """
+        if event_type in self.listeners:
+            if callback is None:
+                del self.listeners[event_type]
+            else:
+                if callback in self.listeners[event_type]:
+                    self.listeners[event_type].remove(callback)
+                # Clean up the key if the list becomes empty
+                if not self.listeners[event_type]:
+                    del self.listeners[event_type]
 
     def handle_event(self, event):
         if not self.visible:
@@ -111,8 +131,17 @@ class Widget(abc.ABC):
         for child in reversed(self.children):
             if child.handle_event(event):
                 return True
-        
+
         return self.process_event(event)
 
     def process_event(self, event):
+        """
+        Executes any callbacks bound to this event type.
+        """
+        if event in self.listeners:
+            for callback in self.listeners[event]:
+                # Call the listener; pass widget and event if needed, or just callback()
+                callback(self, event)
+            return True
+
         return False
