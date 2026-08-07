@@ -8,7 +8,8 @@ from tuia.base import Widget
 class Button(Widget):
     """An interactive button widget with focus states and click callbacks."""
 
-    def __init__(self, parent=None, text="Button", focused_text=None, command=None, x=0, y=0, width=12, height=3, z_index=0):
+    def __init__(self, parent=None, text="Button", focused_text=None, command=None, x=0, y=0, width=None, height=3, z_index=0):
+        width = width or max(1, len(text))
         super().__init__(parent=parent, x=x, y=y, width=width, height=height, z_index=z_index)
         self.text = text
         self.focused_text = focused_text or text
