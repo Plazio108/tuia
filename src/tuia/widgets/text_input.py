@@ -1,11 +1,12 @@
 """
 tuia.widgets.text_input - Single-line text entry field.
 """
+import time
 import curses
 from tuia.base import Widget
 
 class TextInput(Widget):
-    """Single-line text input field supporting typing, backspace, cursor navigation, horizontal scrolling, and a simulated software cursor."""
+    """Single-line text input field supporting typing, backspace, cursor navigation, horizontal scrolling, and a blinking software cursor."""
     def __init__(self, parent=None, value="", placeholder="Type here...", on_submit=None, 
                  x=0, y=0, width=20, height=1, z_index=0):
         super().__init__(parent=parent, x=x, y=y, width=width, height=height, z_index=z_index)
@@ -58,7 +59,7 @@ class TextInput(Widget):
         if not self.window:
             return
 
-        # Ensure the terminal's native hardware cursor is hidden so it doesn't conflict
+        # Ensure terminal's native hardware cursor is hidden
         try:
             curses.curs_set(0)
         except curses.error:
@@ -70,7 +71,7 @@ class TextInput(Widget):
             self.scroll_offset = 0
             screen_cursor_pos = 0
         else:
-            attr = curses.A_UNDERLINE if self.focused else curses.A_NORMAL
+            attr = curses.A_NORMAL
             
             # Correct horizontal scroll bounds based on exact widget width
             if self.cursor_pos < self.scroll_offset:
@@ -87,18 +88,23 @@ class TextInput(Widget):
         padded_text = visible_text.ljust(self.width)
 
         try:
-            # Draw the input field text content safely
+            # Draw the base text field content
             self.window.attron(attr)
             self.window.addstr(0, 0, padded_text[:self.width])
             self.window.attroff(attr)
 
-            # Draw the simulated software cursor if focused
+            # Draw the blinking software cursor if focused
             if self.focused:
-                if not self.value:
-                    cursor_char = self.placeholder[0] if self.placeholder else ' '
-                    self.window.addstr(0, 0, cursor_char, curses.A_REVERSE | curses.A_DIM)
-                elif 0 <= screen_cursor_pos < self.width:
-                    cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
-                    self.window.addstr(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)
+                # Toggle blink state every ~0.5 seconds (2 Hz blink rate)
+                is_blink_on = (int(time.time() * 2) % 2) == 0
+
+                if is_blink_on:
+                    if not self.value:
+                        cursor_char = self.placeholder[0] if self.placeholder else ' '
+                        self.window.addstr(0, 0, cursor_char, curses.A_REVERSE | curses.A_BOLD | curses.A_DIM)
+                    elif 0 <= screen_cursor_pos < self.width:
+                        cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
+                        # High-contrast reverse + bold styling to ensure it's clearly visible
+                        self.window.addstr(0, screen_cursor_pos, cursor_char, curses.A_REVERSE | curses.A_BOLD)
         except curses.error:
             pass
