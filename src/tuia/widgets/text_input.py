@@ -55,7 +55,7 @@ class TextInput(Widget):
             return
 
         display_str = self.value
-        if not display_str and not self.focused:
+        if not display_str:
             display_str = self.placeholder
             attr = curses.A_DIM
         else:
