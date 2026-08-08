@@ -19,14 +19,14 @@ class TextInput(Widget):
     def focus(self):
         self.focused = True
         try:
-            curses.curs_set(1)  # Show the hardware cursor
+            curses.curs_set(1)  # Show hardware cursor
         except curses.error:
             pass
 
     def blur(self):
         self.focused = False
         try:
-            curses.curs_set(0)  # Hide the hardware cursor when unfocused
+            curses.curs_set(0)  # Hide hardware cursor
         except curses.error:
             pass
 
@@ -71,12 +71,8 @@ class TextInput(Widget):
             attr = curses.A_DIM
             self.scroll_offset = 0
             screen_cursor_pos = 0
-            visible_text = display_str[:self.width]
         else:
             attr = curses.A_UNDERLINE if self.focused else curses.A_NORMAL
-            
-            # Keep scroll offset within valid bounds
-            self.scroll_offset = max(0, min(self.scroll_offset, len(self.value)))
             
             # Adjust horizontal scroll window based on cursor position
             if self.cursor_pos < self.scroll_offset:
@@ -84,24 +80,23 @@ class TextInput(Widget):
             elif self.cursor_pos >= self.scroll_offset + self.width:
                 self.scroll_offset = self.cursor_pos - self.width + 1
 
-            visible_text = self.value[self.scroll_offset:self.scroll_offset + self.width]
+            max_offset = max(0, len(self.value) - self.width + 1)
+            self.scroll_offset = max(0, min(self.scroll_offset, max_offset))
             screen_cursor_pos = self.cursor_pos - self.scroll_offset
 
+        display_text = self.value if self.value else self.placeholder
+        visible_text = display_text[self.scroll_offset:self.scroll_offset + self.width]
+        padded_text = visible_text.ljust(self.width)
+
         try:
-            # Draw the input field text content
+            # Draw the input field text content safely
             self.window.attron(attr)
-            self.window.addstr(0, 0, visible_text.ljust(self.width))
+            self.window.addstr(0, 0, padded_text[:self.width])
             self.window.attroff(attr)
 
-            # Draw cursor/highlight if focused
+            # Position the blinking hardware cursor correctly when focused
             if self.focused:
-                if not self.value:
-                    cursor_char = self.placeholder[0] if self.placeholder else ' '
-                    self.window.addstr(0, 0, cursor_char, curses.A_REVERSE | curses.A_DIM)
-                    self.window.move(0, 0)
-                elif 0 <= screen_cursor_pos < self.width:
-                    cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
-                    self.window.addstr(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)
-                    self.window.move(0, screen_cursor_pos)
+                cursor_x = min(max(0, screen_cursor_pos), self.width - 1)
+                self.window.move(0, cursor_x)
         except curses.error:
             pass
