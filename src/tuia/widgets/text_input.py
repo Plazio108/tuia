@@ -16,8 +16,19 @@ class TextInput(Widget):
         self.scroll_offset = 0
         self.focused = False
 
-    def focus(self): self.focused = True
-    def blur(self): self.focused = False
+    def focus(self):
+        self.focused = True
+        try:
+            curses.curs_set(1)  # Show the hardware cursor
+        except curses.error:
+            pass
+
+    def blur(self):
+        self.focused = False
+        try:
+            curses.curs_set(0)  # Hide the hardware cursor when unfocused
+        except curses.error:
+            pass
 
     def process_event(self, key):
         if not self.focused:
