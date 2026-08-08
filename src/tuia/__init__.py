@@ -14,6 +14,8 @@ from tuia.frame import (
 from tuia.layout import (
     pack, 
     place, 
+    align,
+    grid,
     TOP, 
     BOTTOM, 
     LEFT, 
@@ -47,6 +49,8 @@ __all__ = [
     'BORDER_ASCII',
     'pack',
     'place',
+    'align',
+    'grid',
     'TOP',
     'BOTTOM',
     'LEFT',
