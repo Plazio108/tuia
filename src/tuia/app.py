@@ -127,8 +127,9 @@ class TUIApp:
             if self.background_running or self._tui_thread:
                 self.stop_background_loop()
                 self.background_running = False
-                self._tui_thread.join(0)
-                self._tui_thread = None
+                if self._tui_thread:
+                    self._tui_thread.join(0)
+                    self._tui_thread = None
 
             loop_start = time.time()
             self.loop()
