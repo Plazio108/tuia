@@ -22,7 +22,7 @@ class TUIApp:
         self._frame_time = 1.0 / fps_target
         # Custom resize callback: on_resize(app, width, height)
         self.on_resize = on_resize
-        
+
         # --- Thread-Safe UI Updates ---
         self._ui_queue = queue.Queue()
 
@@ -55,12 +55,13 @@ class TUIApp:
         """Starts the TUI engine temporarily in a background thread."""
         if not self.running:
             return
-            
+
         if not self.root_frame:
             raise ValueError("Call set_root() and start() before")
-            
+
         self.ignore_input = not handle_input
-        self._tui_thread = threading.Thread(target=self.run_background_loop, daemon=True)
+        self._tui_thread = threading.Thread(
+            target=self.run_background_loop, daemon=True)
         self._tui_thread.start()
 
     def run_background_loop(self):
@@ -78,6 +79,7 @@ class TUIApp:
             self.background_running = False
             self._tui_thread.join()  # Wait for the UI loop to safely exit curses
             self._tui_thread = None
+            self.ignore_input = False
 
     def sync(self, func):
         """Decorator to run structural changes safely in the UI queue."""
@@ -107,7 +109,7 @@ class TUIApp:
                 self._ui_queue.get_nowait()()
             except queue.Empty:
                 break
-                
+
         self._handle_input()
         self._update()
         self._render()
@@ -123,7 +125,10 @@ class TUIApp:
         while self.running:
             if self.background_running or self._tui_thread:
                 self.stop_background_loop()
-                
+                self.background_running = False
+                self._tui_thread.join(0)
+                self._tui_thread = None
+
             loop_start = time.time()
             self.loop()
             elapsed = time.time() - loop_start
