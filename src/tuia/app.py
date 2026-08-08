@@ -4,6 +4,8 @@ tuia.app - Core engine and lifecycle management for the TUI.
 import curses
 import contextlib
 import time
+import threading
+import queue
 
 
 class TUIApp:
@@ -20,6 +22,14 @@ class TUIApp:
         self._frame_time = 1.0 / fps_target
         # Custom resize callback: on_resize(app, width, height)
         self.on_resize = on_resize
+        
+        # --- Thread-Safe UI Updates ---
+        self._ui_queue = queue.Queue()
+
+        # --- Temporary Background Engine ---
+        self._tui_thread = None
+        self.background_running = False
+        self.ignore_input = False
 
     def init_curses(self, stdscr):
         """Initializes curses parameters for optimal TUI experience."""
@@ -37,12 +47,70 @@ class TUIApp:
         self.root_frame = frame
         self.root_frame.app = self
 
+    # ==========================================
+    # TEMPORARY BACKGROUND ENGINE
+    # ==========================================
+
+    def start_background_loop(self, handle_input=False):
+        """Starts the TUI engine temporarily in a background thread."""
+        if not self.running:
+            return
+            
+        if not self.root_frame:
+            raise ValueError("Call set_root() and start() before")
+            
+        self.ignore_input = not handle_input
+        self._tui_thread = threading.Thread(target=self.run_background_loop, daemon=True)
+        self._tui_thread.start()
+
+    def run_background_loop(self):
+        """Wrapper to execute curses loop inside the background thread."""
+        while self.background_running:
+            loop_start = time.time()
+            self.loop()
+            elapsed = time.time() - loop_start
+            if elapsed < self._frame_time:
+                time.sleep(self._frame_time - elapsed)
+
+    def stop_background_loop(self):
+        """Manually stops the temporary background TUI thread."""
+        if self.background_running and self._tui_thread and self._tui_thread.is_alive():
+            self.background_running = False
+            self._tui_thread.join()  # Wait for the UI loop to safely exit curses
+            self._tui_thread = None
+
+    def sync(self, func):
+        """Decorator to run structural changes safely in the UI queue."""
+        def wrapper(*args, **kwargs):
+            self._ui_queue.put(lambda: func(*args, **kwargs))
+        return wrapper
+
+    # ==========================================
+    # FOREGROUND MAIN LOOP
+    # ==========================================
+
     def start(self):
-        """Starts the application and enters the curses wrapper."""
+        """
+        Starts the main TUI loop in the foreground (blocking).
+        """
         if not self.root_frame:
             raise ValueError(
                 "Cannot start TUIApp without a root frame. Call set_root() first.")
+
         curses.wrapper(self._run)
+
+    def loop(self):
+        """Perform one update of the TUI."""
+        # Process thread-safe structural updates first
+        while not self._ui_queue.empty():
+            try:
+                self._ui_queue.get_nowait()()
+            except queue.Empty:
+                break
+                
+        self._handle_input()
+        self._update()
+        self._render()
 
     def _run(self, stdscr):
         """The main internal event loop."""
@@ -53,12 +121,11 @@ class TUIApp:
         self.root_frame._resize_to_terminal(self.stdscr)
 
         while self.running:
+            if self.background_running or self._tui_thread:
+                self.stop_background_loop()
+                
             loop_start = time.time()
-
-            self._handle_input()
-            self._update()
-            self._render()
-
+            self.loop()
             elapsed = time.time() - loop_start
             if elapsed < self._frame_time:
                 time.sleep(self._frame_time - elapsed)
@@ -68,7 +135,10 @@ class TUIApp:
         try:
             key = self.stdscr.getch()
             if key != curses.ERR:
-                self.root_frame.handle_event(key)
+                if self.ignore_input:
+                    curses.flushinp()
+                else:
+                    self.root_frame.handle_event(key)
         except curses.error:
             pass
 
@@ -99,7 +169,8 @@ class TUIApp:
         curses.doupdate()
 
     def quit(self):
-        """Signals the application to terminate."""
+        """Signals the application loop to terminate."""
+        self.stop_background_loop()
         self.running = False
 
     @contextlib.contextmanager
