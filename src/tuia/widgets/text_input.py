@@ -5,7 +5,7 @@ import curses
 from tuia.base import Widget
 
 class TextInput(Widget):
-    """Single-line text input field supporting typing, backspace, and cursor navigation."""
+    """Single-line text input field supporting typing, backspace, cursor navigation, and horizontal scrolling."""
     def __init__(self, parent=None, value="", placeholder="Type here...", on_submit=None, 
                  x=0, y=0, width=20, height=1, z_index=0):
         super().__init__(parent=parent, x=x, y=y, width=width, height=height, z_index=z_index)
@@ -13,6 +13,7 @@ class TextInput(Widget):
         self.placeholder = placeholder
         self.on_submit = on_submit
         self.cursor_pos = len(value)
+        self.scroll_offset = 0
         self.focused = False
 
     def focus(self): self.focused = True
@@ -54,22 +55,42 @@ class TextInput(Widget):
         if not self.window:
             return
 
-        display_str = self.value
-        if not display_str:
+        if not self.value:
             display_str = self.placeholder
             attr = curses.A_DIM
+            self.scroll_offset = 0
+            screen_cursor_pos = 0
+            visible_text = display_str[:self.width]
         else:
             attr = curses.A_UNDERLINE if self.focused else curses.A_NORMAL
+            
+            # Keep scroll offset within valid bounds
+            self.scroll_offset = max(0, min(self.scroll_offset, len(self.value)))
+            
+            # Adjust horizontal scroll window based on cursor position
+            if self.cursor_pos < self.scroll_offset:
+                self.scroll_offset = self.cursor_pos
+            elif self.cursor_pos >= self.scroll_offset + self.width:
+                self.scroll_offset = self.cursor_pos - self.width + 1
 
-        visible_text = display_str[:self.width]
+            visible_text = self.value[self.scroll_offset:self.scroll_offset + self.width]
+            screen_cursor_pos = self.cursor_pos - self.scroll_offset
 
         try:
+            # Draw the input field text content
             self.window.attron(attr)
             self.window.addstr(0, 0, visible_text.ljust(self.width))
             self.window.attroff(attr)
 
-            if self.focused and self.cursor_pos < self.width:
-                cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
-                self.window.addstr(0, self.cursor_pos, cursor_char, curses.A_REVERSE)
+            # Draw cursor/highlight if focused
+            if self.focused:
+                if not self.value:
+                    cursor_char = self.placeholder[0] if self.placeholder else ' '
+                    self.window.addstr(0, 0, cursor_char, curses.A_REVERSE | curses.A_DIM)
+                    self.window.move(0, 0)
+                elif 0 <= screen_cursor_pos < self.width:
+                    cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
+                    self.window.addstr(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)
+                    self.window.move(0, screen_cursor_pos)
         except curses.error:
             pass
