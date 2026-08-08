@@ -66,6 +66,7 @@ class TUIApp:
 
     def run_background_loop(self):
         """Wrapper to execute curses loop inside the background thread."""
+        self.background_running = True
         while self.background_running:
             loop_start = time.time()
             self.loop()
