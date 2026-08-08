@@ -74,10 +74,10 @@ class TextInput(Widget):
         else:
             attr = curses.A_UNDERLINE if self.focused else curses.A_NORMAL
             
-            # Adjust horizontal scroll window based on cursor position
+            # Corrected horizontal scroll bounds based on exact widget width
             if self.cursor_pos < self.scroll_offset:
                 self.scroll_offset = self.cursor_pos
-            elif self.cursor_pos >= self.scroll_offset + self.width:
+            elif self.cursor_pos > self.scroll_offset + self.width - 1:
                 self.scroll_offset = self.cursor_pos - self.width + 1
 
             max_offset = max(0, len(self.value) - self.width + 1)
