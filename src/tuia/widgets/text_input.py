@@ -5,7 +5,7 @@ import curses
 from tuia.base import Widget
 
 class TextInput(Widget):
-    """Single-line text input field supporting typing, backspace, cursor navigation, and horizontal scrolling."""
+    """Single-line text input field supporting typing, backspace, cursor navigation, horizontal scrolling, and a simulated software cursor."""
     def __init__(self, parent=None, value="", placeholder="Type here...", on_submit=None, 
                  x=0, y=0, width=20, height=1, z_index=0):
         super().__init__(parent=parent, x=x, y=y, width=width, height=height, z_index=z_index)
@@ -18,17 +18,9 @@ class TextInput(Widget):
 
     def focus(self):
         self.focused = True
-        try:
-            curses.curs_set(1)  # Show hardware cursor
-        except curses.error:
-            pass
 
     def blur(self):
         self.focused = False
-        try:
-            curses.curs_set(0)  # Hide hardware cursor
-        except curses.error:
-            pass
 
     def process_event(self, key):
         if not self.focused:
@@ -66,6 +58,12 @@ class TextInput(Widget):
         if not self.window:
             return
 
+        # Ensure the terminal's native hardware cursor is hidden so it doesn't conflict
+        try:
+            curses.curs_set(0)
+        except curses.error:
+            pass
+
         if not self.value:
             display_str = self.placeholder
             attr = curses.A_DIM
@@ -74,7 +72,7 @@ class TextInput(Widget):
         else:
             attr = curses.A_UNDERLINE if self.focused else curses.A_NORMAL
             
-            # Corrected horizontal scroll bounds based on exact widget width
+            # Correct horizontal scroll bounds based on exact widget width
             if self.cursor_pos < self.scroll_offset:
                 self.scroll_offset = self.cursor_pos
             elif self.cursor_pos > self.scroll_offset + self.width - 1:
@@ -94,9 +92,13 @@ class TextInput(Widget):
             self.window.addstr(0, 0, padded_text[:self.width])
             self.window.attroff(attr)
 
-            # Position the blinking hardware cursor correctly when focused
+            # Draw the simulated software cursor if focused
             if self.focused:
-                cursor_x = min(max(0, screen_cursor_pos), self.width - 1)
-                self.window.move(0, cursor_x)
+                if not self.value:
+                    cursor_char = self.placeholder[0] if self.placeholder else ' '
+                    self.window.addstr(0, 0, cursor_char, curses.A_REVERSE | curses.A_DIM)
+                elif 0 <= screen_cursor_pos < self.width:
+                    cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
+                    self.window.addstr(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)
         except curses.error:
             pass
