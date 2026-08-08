@@ -20,10 +20,13 @@ class Button(Widget):
     def blur(self): self.focused = False
 
     def process_event(self, key):
-        if self.focused and key in (curses.KEY_ENTER, 10, 13, ord(' ')):
-            if callable(self.command):
-                self.command()
-            return True
+        if self.focused:
+            result = super().process_event(key)
+            if key in (curses.KEY_ENTER, 10, 13, ord(' ')):
+                if callable(self.command):
+                    self.command()
+                return True
+            return result
         return False
 
     def draw(self):

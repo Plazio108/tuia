@@ -22,6 +22,8 @@ class TextInput(Widget):
         if not self.focused:
             return False
 
+        super().process_event(key)
+
         if key in (curses.KEY_ENTER, 10, 13):
             if callable(self.on_submit):
                 self.on_submit(self.value)

@@ -22,9 +22,12 @@ class CheckBox(Widget):
             self.command(self.checked)
 
     def process_event(self, key):
-        if self.focused and key in (curses.KEY_ENTER, 10, 13, ord(' ')):
-            self.toggle()
-            return True
+        if self.focused:
+            result = super().process_event()
+            if key in (curses.KEY_ENTER, 10, 13, ord(' ')):
+                self.toggle()
+                return True
+            return result
         return False
 
     def draw(self):
