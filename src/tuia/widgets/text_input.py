@@ -107,4 +107,4 @@ class TextInput(Widget):
                         # High-contrast reverse + bold styling to ensure it's clearly visible
                         self.window.addch(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)# | curses.A_BOLD)
         except curses.error:
-            pass
+            print("test")
