@@ -132,15 +132,13 @@ class TextInput(Widget):
         # ------------------------------------------------------
 
         elif key == curses.KEY_LEFT:
-            old_pos = self.cursor_pos
 
             self.cursor_pos = max(
                 0,
                 self.cursor_pos - 1,
             )
 
-            if self.cursor_pos != old_pos:
-                self._reset_cursor_blink()
+            self._reset_cursor_blink()
 
             return True
 
@@ -149,15 +147,13 @@ class TextInput(Widget):
         # ------------------------------------------------------
 
         elif key == curses.KEY_RIGHT:
-            old_pos = self.cursor_pos
 
             self.cursor_pos = min(
                 len(self.value),
                 self.cursor_pos + 1,
             )
 
-            if self.cursor_pos != old_pos:
-                self._reset_cursor_blink()
+            self._reset_cursor_blink()
 
             return True
 
