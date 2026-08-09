@@ -123,8 +123,8 @@ class TextInput(Widget):
                 padded_text,
                 self.width,
             )
-        except:
-            raise RuntimeError(f"{self.window.getyx()[0]} dans {self.window.getmaxyx()[1]}")
+        except curses.error:
+            pass
         finally:
             self.window.attroff(attr)
 
