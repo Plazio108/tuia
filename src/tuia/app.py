@@ -41,7 +41,7 @@ class TUIApp:
         # Wakes the thread currently owning the UI.
         self._ui_wakeup = threading.Event()
 
-        # ID of the thread currently owning curses/UI operations.
+        # Thread ID currently owning curses/UI operations.
         self._ui_thread_id = None
 
         # ======================================================
@@ -50,18 +50,16 @@ class TUIApp:
 
         self._tui_thread = None
 
-        # True while the temporary background UI loop is active.
+        # True while the background loop is active.
         self.background_running = False
 
-        # Tells the background loop that it must terminate.
+        # Requests that the background loop terminate.
         self._background_stop = threading.Event()
 
-        # Set when the background loop has completely terminated.
+        # Set once the background loop has completely terminated.
         self._background_finished = threading.Event()
         self._background_finished.set()
 
-        # Whether input should be discarded while running
-        # the temporary background UI.
         self.ignore_input = False
 
     # ==========================================================
@@ -91,9 +89,7 @@ class TUIApp:
     # ==========================================================
 
     def is_ui_thread(self):
-        """
-        Return True if the calling thread currently owns the TUI.
-        """
+        """Return True if the current thread owns the TUI."""
         return (
             self._ui_thread_id is not None
             and threading.get_ident() == self._ui_thread_id
@@ -115,7 +111,6 @@ class TUIApp:
                 "Call set_root() and start() before"
             )
 
-        # Already running.
         if self.background_running:
             return
 
@@ -147,10 +142,15 @@ class TUIApp:
             ):
                 loop_start = time.monotonic()
 
-                # Consume any previous wake-up.
+                # Consume any old wake-up.
                 self._ui_wakeup.clear()
 
                 self.loop()
+
+                # A stop could have been requested while loop()
+                # was executing. Don't sleep in that case.
+                if self._background_stop.is_set():
+                    break
 
                 elapsed = time.monotonic() - loop_start
 
@@ -160,40 +160,39 @@ class TUIApp:
                     )
 
         finally:
-            # --------------------------------------------------
-            # IMPORTANT:
-            #
-            # This path is reached both when:
-            #   - stop_background_loop() stops us
-            #   - quit() stops the application
-            #   - running becomes false
-            #
-            # Therefore ALL background state must be restored here.
-            # --------------------------------------------------
+            # ----------------------------------------------
+            # Background ownership is ending.
+            # ----------------------------------------------
 
             self.background_running = False
             self.ignore_input = False
 
-            # Release UI ownership.
             if self._ui_thread_id == threading.get_ident():
                 self._ui_thread_id = None
 
-            # Tell the foreground loop that ownership is back.
+            # This is the synchronization point used by the
+            # foreground thread and stop_background_loop().
             self._background_finished.set()
 
-            # Wake the foreground loop if it happens to be waiting.
+            # Wake anything waiting for the background loop.
             self._ui_wakeup.set()
 
     def stop_background_loop(self):
         """
-        Explicitly stop the temporary background UI loop.
+        Stop the temporary background TUI loop.
 
-        Safe to call from another thread.
+        This method waits until the background thread has actually
+        terminated and released UI ownership.
+
+        It is safe to call:
+            - from the foreground thread
+            - from another worker thread
+            - from the background UI thread itself
         """
         thread = self._tui_thread
 
+        # Nothing to stop.
         if thread is None:
-            # Ensure the state is still sane.
             self.background_running = False
             self.ignore_input = False
             return
@@ -201,20 +200,39 @@ class TUIApp:
         # Request termination.
         self._background_stop.set()
 
-        # Interrupt Event.wait() immediately.
+        # Wake it immediately if it is sleeping.
         self._ui_wakeup.set()
 
-        # If called from the background thread itself, we cannot
-        # join ourselves.
-        if thread is not threading.current_thread():
-            thread.join()
+        # ----------------------------------------------
+        # Called by the background UI thread itself.
+        #
+        # It cannot wait for itself.
+        # Its finally block will perform the cleanup.
+        # ----------------------------------------------
+        if thread is threading.current_thread():
+            return
 
-        # At this point the thread should be finished.
-        if not thread.is_alive():
+        # ----------------------------------------------
+        # Called by another thread.
+        #
+        # Wait for the actual ownership handoff rather
+        # than merely waiting on Thread.join().
+        # ----------------------------------------------
+        self._background_finished.wait()
+
+        # At this point the background thread has released
+        # UI ownership.
+        thread.join()
+
+        if self._tui_thread is thread:
             self._tui_thread = None
 
         self.background_running = False
         self.ignore_input = False
+
+        # If we're now the UI thread, restore ownership.
+        if self.running:
+            self._ui_thread_id = threading.get_ident()
 
     # ==========================================================
     # UI QUEUE
@@ -224,6 +242,8 @@ class TUIApp:
         """
         Wait until all UI operations queued before this call
         have been processed.
+
+        If called from the UI thread, process them immediately.
         """
         if self.is_ui_thread():
             self._flush_queue()
@@ -236,7 +256,7 @@ class TUIApp:
 
         self._ui_queue.put(barrier)
 
-        # Wake whichever thread currently owns the UI.
+        # Wake the current UI owner.
         self._ui_wakeup.set()
 
         done.wait()
@@ -259,9 +279,9 @@ class TUIApp:
         """
         Start the main TUI loop.
 
-        curses.wrapper() is intentionally kept at the outermost
-        level so terminal restoration happens even when an exception
-        or KeyboardInterrupt occurs.
+        curses.wrapper() remains the outer boundary so that
+        curses restores the terminal on exceptions and
+        KeyboardInterrupt.
         """
         if not self.root_frame:
             raise ValueError(
@@ -279,8 +299,8 @@ class TUIApp:
         """
         Main foreground TUI loop.
 
-        While a background TUI is active, this thread waits and
-        does not touch curses.
+        The foreground thread does not touch curses while the
+        background thread owns the TUI.
         """
         self._ui_thread_id = threading.get_ident()
 
@@ -289,7 +309,6 @@ class TUIApp:
 
             self.running = True
 
-            # Initial layout.
             self.root_frame._resize_to_terminal(
                 self.stdscr
             )
@@ -301,15 +320,15 @@ class TUIApp:
                 # ==================================================
 
                 if self.background_running:
-                    # Do NOT execute curses operations here.
-                    #
-                    # The background thread owns the UI.
+
+                    # Wait until the background thread's finally
+                    # block signals that ownership has returned.
                     self._background_finished.wait()
 
                     if not self.running:
                         break
 
-                    # Background thread is finished.
+                    # The foreground thread gets ownership back.
                     self._ui_thread_id = threading.get_ident()
 
                     if (
@@ -318,25 +337,29 @@ class TUIApp:
                     ):
                         self._tui_thread = None
 
-                    # Continue immediately with a foreground frame.
+                    self.ignore_input = False
+
                     continue
 
                 # ==================================================
-                # CLEAN UP NATURALLY FINISHED BACKGROUND THREAD
+                # CLEAN UP A NATURALLY FINISHED THREAD
                 # ==================================================
 
                 if self._tui_thread is not None:
 
-                    if self._tui_thread.is_alive():
-                        # This shouldn't normally happen here because
-                        # background_running should remain true while
-                        # the thread is alive, but don't touch curses
-                        # if ownership is ambiguous.
+                    thread = self._tui_thread
+
+                    if thread.is_alive():
+                        # Ownership is ambiguous, so wait for the
+                        # actual background completion signal.
                         self._background_finished.wait()
 
-                    self._tui_thread.join()
-                    self._tui_thread = None
+                    thread.join()
 
+                    if self._tui_thread is thread:
+                        self._tui_thread = None
+
+                    self.background_running = False
                     self.ignore_input = False
                     self._ui_thread_id = threading.get_ident()
 
@@ -352,6 +375,11 @@ class TUIApp:
 
                 self.loop()
 
+                # A background loop could have been started by code
+                # executed during this frame.
+                if self.background_running:
+                    continue
+
                 elapsed = time.monotonic() - loop_start
 
                 if elapsed < self._frame_time:
@@ -360,24 +388,24 @@ class TUIApp:
                     )
 
         finally:
-            # ------------------------------------------------------
-            # If the foreground loop exits for ANY reason, make
-            # absolutely sure no background thread is left owning
-            # the TUI.
-            # ------------------------------------------------------
+            # ======================================================
+            # FINAL APPLICATION CLEANUP
+            # ======================================================
 
             self.running = False
 
             self._background_stop.set()
             self._ui_wakeup.set()
 
-            background_thread = self._tui_thread
+            thread = self._tui_thread
 
             if (
-                background_thread is not None
-                and background_thread is not threading.current_thread()
+                thread is not None
+                and thread is not threading.current_thread()
             ):
-                background_thread.join()
+                self._background_finished.wait()
+
+                thread.join()
 
             self._tui_thread = None
             self.background_running = False
@@ -409,7 +437,6 @@ class TUIApp:
 
                 if self.ignore_input:
                     curses.flushinp()
-
                 else:
                     self.root_frame.handle_event(key)
 
@@ -421,7 +448,7 @@ class TUIApp:
     # ==========================================================
 
     def _update(self):
-        """Handle terminal resizing and layout updates."""
+        """Handle terminal resizing."""
         if curses.is_term_resized(
             curses.LINES,
             curses.COLS
@@ -470,19 +497,12 @@ class TUIApp:
         """
         Request application shutdown.
 
-        This method deliberately does not join the background
-        thread itself. It only signals the loops to stop.
-
-        The owning loop performs the actual cleanup.
+        Does not join threads. The active loop will perform the
+        final cleanup itself.
         """
         self.running = False
 
         self._background_stop.set()
-
-        # Wake:
-        #   - foreground frame sleep
-        #   - background frame sleep
-        #   - foreground ownership wait
         self._ui_wakeup.set()
 
     # ==========================================================
