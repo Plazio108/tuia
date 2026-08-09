@@ -26,6 +26,12 @@ class TUIApp:
         # --- Thread-Safe UI Updates ---
         self._ui_queue = queue.Queue()
 
+        # Wakes the UI thread when another thread queues work.
+        self._ui_wakeup = threading.Event()
+
+        # Identifies the thread that owns the TUI loop.
+        self._ui_thread_id = None
+
         # --- Temporary Background Engine ---
         self._tui_thread = None
         self.background_running = False
@@ -61,19 +67,32 @@ class TUIApp:
 
         self.ignore_input = not handle_input
         self._tui_thread = threading.Thread(
-            target=self.run_background_loop, daemon=True)
+            target=self._run_background_loop, daemon=True)
         self._tui_thread.start()
 
-    def run_background_loop(self):
+    def _run_background_loop(self):
         """Wrapper to execute curses loop inside the background thread."""
+        self._ui_thread_id = threading.get_ident()
         self.background_running = True
-        while self.background_running:
-            loop_start = time.time()
-            self.loop()
-            elapsed = time.time() - loop_start
-            if elapsed < self._frame_time:
-                time.sleep(self._frame_time - elapsed)
 
+        try:
+            while self.background_running:
+                loop_start = time.time()
+
+                self._ui_wakeup.clear()
+
+                self.loop()
+
+                elapsed = time.time() - loop_start
+
+                if elapsed < self._frame_time:
+                    self._ui_wakeup.wait(
+                        self._frame_time - elapsed
+                    )
+
+        finally:
+            self._ui_thread_id = None
+    
     def stop_background_loop(self):
         """Manually stops the temporary background TUI thread."""
         if self.background_running and self._tui_thread and self._tui_thread.is_alive():
@@ -82,11 +101,41 @@ class TUIApp:
             self._tui_thread = None
             self.ignore_input = False
 
-    def sync(self, func):
-        """Decorator to run structural changes safely in the UI queue."""
-        def wrapper(*args, **kwargs):
-            self._ui_queue.put(lambda: func(*args, **kwargs))
-        return wrapper
+    def flush(self):
+        """
+        Wait until all UI operations queued before this call
+        have been processed.
+        """
+        if self.is_ui_thread():
+            self._flush_queue()
+            return
+
+        done = threading.Event()
+
+        def barrier():
+            done.set()
+
+        self._ui_queue.put(barrier)
+        self._ui_wakeup.set()
+
+        done.wait()
+    
+    def _flush_queue(self):
+        """Process everything currently pending in the UI queue."""
+        while True:
+            try:
+                func = self._ui_queue.get_nowait()
+            except queue.Empty:
+                break
+
+            func()
+
+    def is_ui_thread(self):
+        """Return True if called from the thread currently running the TUI."""
+        return (
+            self._ui_thread_id is not None
+            and threading.get_ident() == self._ui_thread_id
+        )
 
     # ==========================================
     # FOREGROUND MAIN LOOP
@@ -105,11 +154,8 @@ class TUIApp:
     def loop(self):
         """Perform one update of the TUI."""
         # Process thread-safe structural updates first
-        while not self._ui_queue.empty():
-            try:
-                self._ui_queue.get_nowait()()
-            except queue.Empty:
-                break
+
+        self._flush_queue()
 
         self._handle_input()
         self._update()
@@ -117,25 +163,40 @@ class TUIApp:
 
     def _run(self, stdscr):
         """The main internal event loop."""
-        self.init_curses(stdscr)
-        self.running = True
+        self._ui_thread_id = threading.get_ident()
 
-        # Trigger initial layout calculations
-        self.root_frame._resize_to_terminal(self.stdscr)
+        try:
+            self.init_curses(stdscr)
+            self.running = True
 
-        while self.running:
-            if self.background_running or self._tui_thread:
-                self.stop_background_loop()
-                self.background_running = False
-                if self._tui_thread:
-                    self._tui_thread.join(0)
-                    self._tui_thread = None
+            # Trigger initial layout calculations
+            self.root_frame._resize_to_terminal(self.stdscr)
 
-            loop_start = time.time()
-            self.loop()
-            elapsed = time.time() - loop_start
-            if elapsed < self._frame_time:
-                time.sleep(self._frame_time - elapsed)
+            while self.running:
+                if self.background_running or self._tui_thread:
+                    self.stop_background_loop()
+                    self.background_running = False
+                    if self._tui_thread:
+                        self._tui_thread.join(0)
+                        self._tui_thread = None
+                        self._ui_thread_id = threading.get_ident()
+
+                loop_start = time.time()
+
+                # Any wake-up that caused us to enter this iteration
+                # has now been consumed.
+                self._ui_wakeup.clear()
+
+                self.loop()
+
+                elapsed = time.time() - loop_start
+
+                if elapsed < self._frame_time:
+                    self._ui_wakeup.wait(
+                        self._frame_time - elapsed
+                    )
+        finally:
+            self._ui_thread_id = None
 
     def _handle_input(self):
         """Fetches input and passes it to the root frame for event bubbling."""

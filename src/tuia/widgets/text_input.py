@@ -101,10 +101,10 @@ class TextInput(Widget):
                 if is_blink_on:
                     if not self.value:
                         cursor_char = self.placeholder[0] if self.placeholder else ' '
-                        self.window.addstr(0, 0, cursor_char, curses.A_REVERSE)# | curses.A_BOLD | curses.A_DIM)
+                        self.window.addch(0, 0, cursor_char, curses.A_REVERSE)# | curses.A_BOLD | curses.A_DIM)
                     elif 0 <= screen_cursor_pos < self.width:
                         cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
                         # High-contrast reverse + bold styling to ensure it's clearly visible
-                        self.window.addstr(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)# | curses.A_BOLD)
+                        self.window.addch(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)# | curses.A_BOLD)
         except curses.error:
             pass

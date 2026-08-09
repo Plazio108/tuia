@@ -42,6 +42,7 @@ from tuia.widgets import (
 )
 from tuia.styles import colors
 from tuia.events import FocusManager
+from tuia.sync import sync, sync_wait
 
 __all__ = [
     'TUIApp',
@@ -56,10 +57,15 @@ __all__ = [
     'place',
     'align',
     'grid',
+    'TOPLEFT',
     'TOP',
-    'BOTTOM',
+    'TOPRIGHT',
     'LEFT',
+    'CENTER',
     'RIGHT',
+    'BOTTOMLEFT',
+    'BOTTOM',
+    'BOTTOMRIGHT',
     'FILL_NONE',
     'FILL_X',
     'FILL_Y',
@@ -73,5 +79,7 @@ __all__ = [
     'RadioGroup',
     'Dialog',
     'colors',
-    'FocusManager'
+    'FocusManager',
+    'sync',
+    'sync_wait'
 ]

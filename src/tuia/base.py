@@ -4,12 +4,15 @@ tuia.base - Base Widget class defining geometry, visibility, and Z-indexing.
 import curses
 import abc
 
+from tuia.sync import sync, sync_wait
+
 
 class Widget(abc.ABC):
     """
     Abstract base class for all UI components in the engine.
     """
 
+    @sync_wait
     def __init__(self, parent=None, x=0, y=0, width=10, height=3, z_index=0):
         self.children = []
         self.x = x
@@ -27,26 +30,41 @@ class Widget(abc.ABC):
 
         self.parent = parent
         if self.parent is not None:
-            self.parent.add_child(self)
             self.app = self.parent.app
+            self.parent.add_child(self)
         else:
             self.app = None
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        init = cls.__dict__.get("__init__")
+
+        if init is not None and not getattr(
+            init,
+            "_ui_sync_wrapped",
+            False
+        ):
+            cls.__init__ = sync_wait(init)
 
     @property
     def z_index(self):
         return self._z_index
 
     @z_index.setter
+    @sync
     def z_index(self, value):
         self._z_index = value
         if self.parent:
             self.parent._sort_children()
 
+    @sync
     def add_child(self, child):
         if child not in self.children:
             self.children.append(child)
             self._sort_children()
 
+    @sync
     def remove_child(self, child):
         if child in self.children:
             self.children.remove(child)
@@ -68,6 +86,7 @@ class Widget(abc.ABC):
         for child in self.children:
             child.update_layout()
 
+    @sync_wait
     def update_geometry(self, x, y, width, height):
         self.x = max(0, x)
         self.y = max(0, y)
@@ -102,6 +121,7 @@ class Widget(abc.ABC):
         for child in self.children:
             child.render()
 
+    @sync
     def bind(self, event_type, callback):
         """Registers an event listener callback for a given event type."""
         if event_type not in self.listeners:
@@ -109,6 +129,7 @@ class Widget(abc.ABC):
         if callback not in self.listeners[event_type]:
             self.listeners[event_type].append(callback)
 
+    @sync
     def unbind(self, event_type, callback=None):
         """
         Removes an event listener callback. 
