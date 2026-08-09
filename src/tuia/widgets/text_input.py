@@ -124,7 +124,7 @@ class TextInput(Widget):
                 self.width,
             )
         except:
-            raise RuntimeError(f"{self.width} dans {self.window.getmaxyx()[1]}")
+            raise RuntimeError(f"{self.window.getyx()[0]} dans {self.window.getmaxyx()[1]}")
         finally:
             self.window.attroff(attr)
 
