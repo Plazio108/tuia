@@ -133,13 +133,14 @@ class TextInput(Widget):
         # ----------------------------------------------------------
 
         if not self.focused:
+            print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
             return
 
         if (int(time.monotonic() * 2) % 2) != 0:
             return
 
         # At the end of the text there is no character to modify.
-        if self.cursor_pos >= len(self.value):
+        if self.cursor_pos > len(self.value):
             return
 
         screen_cursor_pos = (
@@ -159,6 +160,6 @@ class TextInput(Widget):
         self.window.addch(
             0,
             screen_cursor_pos,
-            self.value[self.cursor_pos],
+            self.window.getch(0, screen_cursor_pos),
             curses.A_REVERSE,
         )
