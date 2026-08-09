@@ -160,10 +160,12 @@ class TextInput(Widget):
                 f"width={self.width}"
             )
 
+        cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else " "
+
         # Modify the character already rendered at the cursor.
         self.window.addch(
             0,
             screen_cursor_pos,
-            self.window.getch(0, screen_cursor_pos),
+            cursor_char,
             curses.A_REVERSE,
         )
