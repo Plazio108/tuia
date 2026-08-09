@@ -92,7 +92,7 @@ class TUIApp:
 
         finally:
             self._ui_thread_id = None
-    
+
     def stop_background_loop(self):
         """Manually stops the temporary background TUI thread."""
         if self.background_running and self._tui_thread and self._tui_thread.is_alive():
@@ -119,7 +119,7 @@ class TUIApp:
         self._ui_wakeup.set()
 
         done.wait()
-    
+
     def _flush_queue(self):
         """Process everything currently pending in the UI queue."""
         while True:
@@ -179,7 +179,8 @@ class TUIApp:
                     if self._tui_thread:
                         self._tui_thread.join(0)
                         self._tui_thread = None
-                        self._ui_thread_id = threading.get_ident()
+
+                self._ui_thread_id = threading.get_ident()
 
                 loop_start = time.time()
 
