@@ -106,5 +106,5 @@ class TextInput(Widget):
                         cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
                         # High-contrast reverse + bold styling to ensure it's clearly visible
                         self.window.addch(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)# | curses.A_BOLD)
-        except curses.error:
-            print("test")
+        except curses.error as e:
+            print(e)
