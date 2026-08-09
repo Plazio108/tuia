@@ -92,6 +92,7 @@ class TUIApp:
 
         finally:
             self._ui_thread_id = None
+            print('test')
 
     def stop_background_loop(self):
         """Manually stops the temporary background TUI thread."""
