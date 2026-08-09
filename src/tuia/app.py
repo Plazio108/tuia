@@ -183,7 +183,7 @@ class TUIApp:
 
                 if self._ui_thread_id != threading.get_ident():
                     self._ui_thread_id = threading.get_ident()
-                    print('main')
+                    print('mainuhbzedhbadhahzbdjahzbjhbecjhbazjhbajhbcjhbhanbkhzbjkcjnkjnakhzbbkjnkxjankzhbhbckjanzkjbxkjnc')
 
                 loop_start = time.time()
 
