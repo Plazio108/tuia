@@ -162,10 +162,13 @@ class TextInput(Widget):
 
         cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else " "
 
-        # Modify the character already rendered at the cursor.
-        self.window.addch(
-            0,
-            screen_cursor_pos,
-            cursor_char,
-            curses.A_REVERSE,
-        )
+        try:
+            # Modify the character already rendered at the cursor.
+            self.window.addch(
+                0,
+                screen_cursor_pos,
+                cursor_char,
+                curses.A_REVERSE,
+            )
+        except curses.error:
+            pass
