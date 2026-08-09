@@ -132,18 +132,18 @@ class TextInput(Widget):
         # Software cursor
         # ----------------------------------------------------------
 
-        if not self.focused:
-            # print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-            return
+        # if not self.focused:
+        #     # print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+        #     return
 
-        if (int(time.monotonic() * 2) % 2) != 0:
-            return
+        # if (int(time.monotonic() * 2) % 2) != 0:
+        #     return
 
         # print("bbbbbbbbbbbbbb")
 
         # At the end of the text there is no character to modify.
-        if self.cursor_pos > len(self.value):
-            return
+        # if self.cursor_pos > len(self.value):
+        #     return
 
         # print("cccccccccccccc")
 
