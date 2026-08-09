@@ -364,7 +364,7 @@ class TUIApp:
         self._handle_input()
         self._update()
         self._render()
-        print('loop')
+        print(self.ignore_input)
 
     # ==========================================================
     # INPUT
