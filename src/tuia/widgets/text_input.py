@@ -59,53 +59,133 @@ class TextInput(Widget):
         if not self.window:
             return
 
-        # Ensure terminal's native hardware cursor is hidden
+        # Hide the real terminal cursor.
         try:
             curses.curs_set(0)
         except curses.error:
             pass
 
+        # ----------------------------------------------------------
+        # Determine what is displayed
+        # ----------------------------------------------------------
+
         if not self.value:
-            display_str = self.placeholder
+            display_text = self.placeholder
             attr = curses.A_DIM
+
             self.scroll_offset = 0
             screen_cursor_pos = 0
+
         else:
+            display_text = self.value
             attr = curses.A_NORMAL
-            
-            # Correct horizontal scroll bounds based on exact widget width
+
+            # Keep the cursor visible horizontally.
             if self.cursor_pos < self.scroll_offset:
                 self.scroll_offset = self.cursor_pos
-            elif self.cursor_pos > self.scroll_offset + self.width - 1:
-                self.scroll_offset = self.cursor_pos - self.width + 1
 
-            max_offset = max(0, len(self.value) - self.width + 1)
-            self.scroll_offset = max(0, min(self.scroll_offset, max_offset))
-            screen_cursor_pos = self.cursor_pos - self.scroll_offset
+            elif self.cursor_pos >= self.scroll_offset + self.width:
+                self.scroll_offset = (
+                    self.cursor_pos - self.width + 1
+                )
 
-        display_text = self.value if self.value else self.placeholder
-        visible_text = display_text[self.scroll_offset:self.scroll_offset + self.width]
+            max_offset = max(
+                0,
+                len(self.value) - self.width
+            )
+
+            self.scroll_offset = max(
+                0,
+                min(self.scroll_offset, max_offset)
+            )
+
+            screen_cursor_pos = (
+                self.cursor_pos - self.scroll_offset
+            )
+
+        # ----------------------------------------------------------
+        # Draw text
+        # ----------------------------------------------------------
+
+        visible_text = display_text[
+            self.scroll_offset:
+            self.scroll_offset + self.width
+        ]
+
         padded_text = visible_text.ljust(self.width)
 
         try:
-            # Draw the base text field content
             self.window.attron(attr)
-            self.window.addstr(0, 0, padded_text[:self.width])
+
+            self.window.addnstr(
+                0,
+                0,
+                padded_text,
+                self.width,
+            )
+
             self.window.attroff(attr)
 
-            # Draw the blinking software cursor if focused
-            if self.focused:
-                # Toggle blink state every ~0.5 seconds (2 Hz blink rate)
-                is_blink_on = (int(time.time() * 2) % 2) == 0
+        except curses.error:
+            return
 
-                if is_blink_on:
-                    if not self.value:
-                        cursor_char = self.placeholder[0] if self.placeholder else ' '
-                        self.window.addch(0, 0, cursor_char, curses.A_REVERSE)# | curses.A_BOLD | curses.A_DIM)
-                    elif 0 <= screen_cursor_pos < self.width:
-                        cursor_char = self.value[self.cursor_pos] if self.cursor_pos < len(self.value) else ' '
-                        # High-contrast reverse + bold styling to ensure it's clearly visible
-                        self.window.addch(0, screen_cursor_pos, cursor_char, curses.A_REVERSE)# | curses.A_BOLD)
-        except curses.error as e:
-            import traceback
-            traceback.print_exc()
+        # ----------------------------------------------------------
+        # Software cursor
+        # ----------------------------------------------------------
+
+        if not self.focused:
+            return
+
+        # Blink at approximately 2 Hz.
+        blink_on = (int(time.monotonic() * 2) % 2) == 0
+
+        if not blink_on:
+            return
+
+        # The cursor can be at:
+        #
+        #     0 <= screen_cursor_pos <= width
+        #
+        # But if it is exactly width, it is outside the drawable
+        # columns of the curses window.
+        #
+        # Scrolling above should normally prevent this, but clamp
+        # defensively.
+        if screen_cursor_pos >= self.width:
+            screen_cursor_pos = self.width - 1
+
+        if screen_cursor_pos < 0:
+            return
+
+        # Character under the cursor.
+        if (
+            self.value
+            and self.cursor_pos < len(self.value)
+        ):
+            cursor_char = self.value[self.cursor_pos]
+
+        elif not self.value and self.placeholder:
+            cursor_char = self.placeholder[0]
+
+        else:
+            cursor_char = " "
+
+        # ----------------------------------------------------------
+        # Draw the software cursor.
+        #
+        # Use a space when the cursor is at the end of the value.
+        # Use reverse video to make the cursor visible.
+        # ----------------------------------------------------------
+
+        try:
+            self.window.addch(
+                0,
+                screen_cursor_pos,
+                cursor_char,
+                curses.A_REVERSE,
+            )
+
+        except curses.error:
+            # The cursor is purely visual, so don't let a terminal
+            # boundary condition break the entire TUI.
+            pass
