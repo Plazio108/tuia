@@ -181,8 +181,9 @@ class TUIApp:
                         self._tui_thread.join(0)
                         self._tui_thread = None
 
-                self._ui_thread_id = threading.get_ident()
-                print('main')
+                if self._ui_thread_id != threading.get_ident():
+                    self._ui_thread_id = threading.get_ident()
+                    print('main')
 
                 loop_start = time.time()
 
