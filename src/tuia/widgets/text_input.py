@@ -59,28 +59,25 @@ class TextInput(Widget):
         if not self.window:
             return
 
-        # Hide the real terminal cursor.
-        try:
-            curses.curs_set(0)
-        except curses.error:
-            pass
-
         # ----------------------------------------------------------
-        # Determine what is displayed
+        # Text and scrolling
         # ----------------------------------------------------------
 
-        if not self.value:
-            display_text = self.placeholder
-            attr = curses.A_DIM
-
-            self.scroll_offset = 0
-            screen_cursor_pos = 0
-
-        else:
+        if self.value:
             display_text = self.value
             attr = curses.A_NORMAL
 
-            # Keep the cursor visible horizontally.
+            # cursor_pos is an insertion position:
+            #
+            #   0 <= cursor_pos <= len(value)
+            #
+            # The character being modified is:
+            #
+            #   value[cursor_pos]
+            #
+            # so there is no character to modify when cursor_pos
+            # equals len(value).
+
             if self.cursor_pos < self.scroll_offset:
                 self.scroll_offset = self.cursor_pos
 
@@ -89,9 +86,11 @@ class TextInput(Widget):
                     self.cursor_pos - self.width + 1
                 )
 
+            # We need to be able to display the insertion position
+            # immediately after the final character.
             max_offset = max(
                 0,
-                len(self.value) - self.width
+                len(self.value) - self.width + 1
             )
 
             self.scroll_offset = max(
@@ -99,12 +98,13 @@ class TextInput(Widget):
                 min(self.scroll_offset, max_offset)
             )
 
-            screen_cursor_pos = (
-                self.cursor_pos - self.scroll_offset
-            )
+        else:
+            display_text = self.placeholder
+            attr = curses.A_DIM
+            self.scroll_offset = 0
 
         # ----------------------------------------------------------
-        # Draw text
+        # Draw normal text
         # ----------------------------------------------------------
 
         visible_text = display_text[
@@ -114,20 +114,17 @@ class TextInput(Widget):
 
         padded_text = visible_text.ljust(self.width)
 
-        try:
-            self.window.attron(attr)
+        self.window.attron(attr)
 
+        try:
             self.window.addnstr(
                 0,
                 0,
                 padded_text,
                 self.width,
             )
-
+        finally:
             self.window.attroff(attr)
-
-        except curses.error:
-            return
 
         # ----------------------------------------------------------
         # Software cursor
@@ -136,56 +133,30 @@ class TextInput(Widget):
         if not self.focused:
             return
 
-        # Blink at approximately 2 Hz.
-        blink_on = (int(time.monotonic() * 2) % 2) == 0
-
-        if not blink_on:
+        if (int(time.monotonic() * 2) % 2) != 0:
             return
 
-        # The cursor can be at:
-        #
-        #     0 <= screen_cursor_pos <= width
-        #
-        # But if it is exactly width, it is outside the drawable
-        # columns of the curses window.
-        #
-        # Scrolling above should normally prevent this, but clamp
-        # defensively.
-        if screen_cursor_pos >= self.width:
-            screen_cursor_pos = self.width - 1
-
-        if screen_cursor_pos < 0:
+        # At the end of the text there is no character to modify.
+        if self.cursor_pos >= len(self.value):
             return
 
-        # Character under the cursor.
-        if (
-            self.value
-            and self.cursor_pos < len(self.value)
-        ):
-            cursor_char = self.value[self.cursor_pos]
+        screen_cursor_pos = (
+            self.cursor_pos - self.scroll_offset
+        )
 
-        elif not self.value and self.placeholder:
-            cursor_char = self.placeholder[0]
-
-        else:
-            cursor_char = " "
-
-        # ----------------------------------------------------------
-        # Draw the software cursor.
-        #
-        # Use a space when the cursor is at the end of the value.
-        # Use reverse video to make the cursor visible.
-        # ----------------------------------------------------------
-
-        try:
-            self.window.addch(
-                0,
-                screen_cursor_pos,
-                cursor_char,
-                curses.A_REVERSE,
+        if not 0 <= screen_cursor_pos < self.width:
+            raise RuntimeError(
+                "TextInput cursor outside visible area: "
+                f"cursor_pos={self.cursor_pos}, "
+                f"scroll_offset={self.scroll_offset}, "
+                f"screen_cursor_pos={screen_cursor_pos}, "
+                f"width={self.width}"
             )
 
-        except curses.error:
-            # The cursor is purely visual, so don't let a terminal
-            # boundary condition break the entire TUI.
-            pass
+        # Modify the character already rendered at the cursor.
+        self.window.addch(
+            0,
+            screen_cursor_pos,
+            self.value[self.cursor_pos],
+            curses.A_REVERSE,
+        )
