@@ -139,9 +139,13 @@ class TextInput(Widget):
         if (int(time.monotonic() * 2) % 2) != 0:
             return
 
+        print("bbbbbbbbbbbbbb")
+
         # At the end of the text there is no character to modify.
         if self.cursor_pos > len(self.value):
             return
+
+        print("cccccccccccccc")
 
         screen_cursor_pos = (
             self.cursor_pos - self.scroll_offset
