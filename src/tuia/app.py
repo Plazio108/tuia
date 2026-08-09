@@ -362,9 +362,9 @@ class TUIApp:
         self._flush_queue()
 
         self._handle_input()
-        print('loop')
         self._update()
         self._render()
+        print('loop')
 
     # ==========================================================
     # INPUT
