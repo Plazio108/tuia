@@ -1,11 +1,107 @@
 """
-tuia.base - Base Widget class defining geometry, visibility, and Z-indexing.
+tuia.base - Base Widget class defining geometry, visibility, and Z-indexing (Textual 2D Layer).
 """
-import curses
 import abc
+from typing import Optional, Tuple
+from tuia.constants import Modifiers
 
 from tuia.sync import sync, sync_wait
 
+
+# =============================================================================
+# 2D SUB-WINDOW VIRTUAL VIEW (curses.newwin Replacement)
+# =============================================================================
+
+class SubWindow:
+    """
+    A virtual sub-window wrapper that maps local widget coordinates (y, x) 
+    to global coordinates on the root Textual 2D canvas buffer.
+    """
+
+    def __init__(self, widget: "Widget"):
+        self._widget = widget
+        self._active_attr = Modifiers.NORMAL
+
+    @property
+    def _root_window(self):
+        return self._widget._get_root_window()
+
+    def getmaxyx(self) -> Tuple[int, int]:
+        return self._widget.height, self._widget.width
+
+    # =========================================================================
+    # ATTRIBUTE MANAGEMENT (curses parity)
+    # =========================================================================
+
+    def attrset(self, attr: int):
+        """Sets the active attribute mask, overwriting previous attributes."""
+        self._active_attr = attr
+
+    def attron(self, attr: int):
+        """Turns on specific attribute bits without clearing existing ones."""
+        self._active_attr |= attr
+
+    def attroff(self, attr: int):
+        """Turns off specific attribute bits."""
+        self._active_attr &= ~attr
+
+    # =========================================================================
+    # DRAWING OPERATIONS
+    # =========================================================================
+
+    def erase(self):
+        root = self._root_window
+        if not root:
+            return
+
+        blank = " " * self._widget.width
+        for ly in range(self._widget.height):
+            root.addstr(self._widget.y + ly, self._widget.x, blank)
+
+    def clear(self):
+        self.erase()
+
+    def addstr(self, y: int, x: int, text: str, attr: int = 0):
+        """
+        Draws text using local coordinates. Combines active window attributes 
+        with any inline attr parameter.
+        """
+        root = self._root_window
+        if not root:
+            return
+
+        if y < 0 or y >= self._widget.height or x < 0 or x >= self._widget.width:
+            return
+
+        available = min(len(text), self._widget.width - x)
+        if available <= 0:
+            return
+
+        clipped_text = text[:available]
+        effective_attr = self._active_attr | attr
+
+        root.addstr(self._widget.y + y, self._widget.x + x, clipped_text, effective_attr)
+
+    def addch(self, y: int, x: int, ch: str, attr: int = 0):
+        self.addstr(y, x, str(ch)[:1], attr)
+
+    def inch(self, y: int, x: int) -> int:
+        root = self._root_window
+        if root and 0 <= y < self._widget.height and 0 <= x < self._widget.width:
+            return root.inch(self._widget.y + y, self._widget.x + x)
+        return 32
+
+    def noutrefresh(self):
+        pass
+
+    def refresh(self):
+        root = self._root_window
+        if root:
+            root.refresh()
+
+# =============================================================================
+# WIDGET BASE CLASS
+# =============================================================================
 
 class Widget(abc.ABC):
     """
@@ -15,8 +111,8 @@ class Widget(abc.ABC):
     @sync_wait
     def __init__(self, parent=None, x=0, y=0, width=10, height=3, z_index=0):
         self.children = []
-        self.x = x
-        self.y = y
+        self.x = max(0, x)
+        self.y = max(0, y)
         self.width = max(1, width)
         self.height = max(1, height)
         self.req_width = max(1, width)
@@ -25,8 +121,10 @@ class Widget(abc.ABC):
         self.layout_params = {}
         self._z_index = z_index
         self.visible = True
-        self.window = None
         self.listeners = {}
+
+        # Initialize sub-window view bound to this widget
+        self.window = SubWindow(self)
 
         self.parent = parent
         if self.parent is not None:
@@ -46,6 +144,14 @@ class Widget(abc.ABC):
             False
         ):
             cls.__init__ = sync_wait(init)
+
+    def _get_root_window(self):
+        """Traverses hierarchy to retrieve the root Textual 2D Window instance."""
+        if self.app and getattr(self.app, "stdscr", None) is not None:
+            return self.app.stdscr
+        if self.parent:
+            return self.parent._get_root_window()
+        return None
 
     @property
     def z_index(self):
@@ -88,35 +194,27 @@ class Widget(abc.ABC):
 
     @sync_wait
     def update_geometry(self, x, y, width, height):
+        """Updates widget coordinates and dimension bounds."""
         self.x = max(0, x)
         self.y = max(0, y)
         self.width = max(1, width)
         self.height = max(1, height)
 
-        if self.window is not None:
-            del self.window
-
-        try:
-            self.window = curses.newwin(
-                self.height, self.width, self.y, self.x)
-        except curses.error:
-            self.window = None
+        if self.window is None:
+            self.window = SubWindow(self)
 
     @abc.abstractmethod
     def draw(self):
         pass
 
     def render(self):
+        """Executes drawing pass for this widget and recursively renders children."""
         if not self.visible or not self.window:
             return
 
         self.window.erase()
         self.draw()
-
-        try:
-            self.window.noutrefresh()
-        except curses.error:
-            pass
+        self.window.noutrefresh()
 
         for child in self.children:
             child.render()
@@ -161,7 +259,6 @@ class Widget(abc.ABC):
         """
         if event in self.listeners:
             for callback in self.listeners[event]:
-                # Call the listener; pass widget and event if needed, or just callback()
                 callback(self, event)
             return True
 

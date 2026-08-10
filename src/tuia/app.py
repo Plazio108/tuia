@@ -1,20 +1,228 @@
 """
-tuia.app - Core engine and lifecycle management for the TUI.
+tuia.app - Core engine and lifecycle management for the TUI (Textual Backend).
 """
 
 import contextlib
-import curses
 import queue
 import threading
 import time
+from typing import Optional, Tuple, List, Union
 
+from textual.app import App as TextualApp, ComposeResult
+from textual.widget import Widget
+from rich.text import Text
+from rich.style import Style
+
+
+# =============================================================================
+# 2D WINDOW COMPATIBILITY LAYER (stdscr Replacement)
+# =============================================================================
+
+class _Cell:
+    __slots__ = ("char", "fg", "bg", "modifiers")
+
+    def __init__(
+        self,
+        char: str = " ",
+        fg: Union[None, Tuple[int, int, int], str] = None,
+        bg: Union[None, Tuple[int, int, int], str] = None,
+        modifiers: int = 0,
+    ):
+        self.char = char
+        self.fg = fg
+        self.bg = bg
+        self.modifiers = modifiers
+
+
+class Window(Widget):
+    """
+    A 2D curses-compatible canvas widget that manages an explicit matrix buffer.
+    Acts as a stdscr drop-in replacement for drawing and rendering.
+    """
+
+    def __init__(self, name: Optional[str] = None, id: Optional[str] = None):
+        super().__init__(name=name, id=id)
+        self._grid: List[List[_Cell]] = []
+        self._height = 0
+        self._width = 0
+        self._active_attr = Modifiers.NORMAL
+        self._lock = threading.Lock()
+
+    def attrset(self, attr: int):
+        self._active_attr = attr
+
+    def attron(self, attr: int):
+        self._active_attr |= attr
+
+    def attroff(self, attr: int):
+        self._active_attr &= ~attr
+
+    def addstr(self, y: int, x: int, text: str, attr: int = 0):
+        with self._lock:
+            if y < 0 or y >= self._height or x < 0 or x >= self._width:
+                return
+
+            available = self._width - x
+            if available <= 0:
+                return
+
+            effective_attr = self._active_attr | attr
+            text = text[:available]
+
+            for i, char in enumerate(text):
+                cell = self._grid[y][x + i]
+                cell.char = char
+                cell.modifiers = effective_attr
+
+    def on_resize(self, event) -> None:
+        """Re-initializes matrix buffer on resize while preserving valid cell contents."""
+        new_width, new_height = event.size.width, event.size.height
+
+        with self._lock:
+            new_grid = [
+                [_Cell() for _ in range(new_width)] for _ in range(new_height)
+            ]
+            for y in range(min(self._height, new_height)):
+                for x in range(min(self._width, new_width)):
+                    new_grid[y][x] = self._grid[y][x]
+
+            self._grid = new_grid
+            self._height = new_height
+            self._width = new_width
+
+    def getmaxyx(self) -> Tuple[int, int]:
+        """Returns (height, width) matching standard curses syntax."""
+        return self._height, self._width
+
+    def erase(self):
+        """Clears all cells in the grid."""
+        with self._lock:
+            for y in range(self._height):
+                for x in range(self._width):
+                    cell = self._grid[y][x]
+                    cell.char = " "
+                    cell.fg = None
+                    cell.bg = None
+                    cell.modifiers = 0
+
+    def clear(self):
+        self.erase()
+
+    def addstr(self, y: int, x: int, text: str, attr: int = 0):
+        """Safely writes a string at (y, x), strictly clipped to window bounds."""
+        with self._lock:
+            if y < 0 or y >= self._height or x < 0 or x >= self._width:
+                return
+
+            available = self._width - x
+            if available <= 0:
+                return
+
+            text = text[:available]
+            for i, char in enumerate(text):
+                cell = self._grid[y][x + i]
+                cell.char = char
+                cell.modifiers = attr
+
+    def addch(self, y: int, x: int, ch: str, attr: int = 0):
+        """Writes a single character at (y, x)."""
+        self.addstr(y, x, str(ch)[:1], attr)
+
+    def inch(self, y: int, x: int) -> int:
+        """Mock inch for compatibility."""
+        with self._lock:
+            if 0 <= y < self._height and 0 <= x < self._width:
+                return ord(self._grid[y][x].char[0])
+            return 32
+
+    def noutrefresh(self):
+        """No-op for curses parity."""
+        pass
+
+    def doupdate(self):
+        """Triggers a Textual widget refresh."""
+        self.refresh()
+
+    def render(self) -> Text:
+        """Converts the internal 2D grid matrix into a styled Rich renderable."""
+        rendered_text = Text()
+
+        with self._lock:
+            for y in range(self._height):
+                for x in range(self._width):
+                    cell = self._grid[y][x]
+
+                    fg = (
+                        f"rgb({cell.fg[0]},{cell.fg[1]},{cell.fg[2]})"
+                        if isinstance(cell.fg, (tuple, list))
+                        else cell.fg
+                    )
+                    bg = (
+                        f"rgb({cell.bg[0]},{cell.bg[1]},{cell.bg[2]})"
+                        if isinstance(cell.bg, (tuple, list))
+                        else cell.bg
+                    )
+
+                    style = Style(
+                        color=fg,
+                        bgcolor=bg,
+                        bold=bool(cell.modifiers & 1),
+                        dim=bool(cell.modifiers & 2),
+                        underline=bool(cell.modifiers & 4),
+                        reverse=bool(cell.modifiers & 8),
+                        italic=bool(cell.modifiers & 16),
+                    )
+                    rendered_text.append(cell.char, style=style)
+
+                if y < self._height - 1:
+                    rendered_text.append("\n")
+
+        return rendered_text
+
+
+# =============================================================================
+# TEXTUAL BRIDGE APP
+# =============================================================================
+
+class _TextualBridgeApp(TextualApp):
+    """Textual container housing the 2D window buffer and routing events."""
+
+    def __init__(self, tui_engine: "TUIApp"):
+        super().__init__()
+        self.tui_engine = tui_engine
+        self.window = Window()
+
+    def compose(self) -> ComposeResult:
+        yield self.window
+
+    def on_mount(self) -> None:
+        self.tui_engine.stdscr = self.window
+        # Start TUIApp foreground thread execution inside Textual worker
+        self.run_worker(self._start_engine, thread=True)
+
+    def _start_engine(self):
+        self.tui_engine._run_engine()
+
+    def on_key(self, event) -> None:
+        """Routes Textual keyboard events to TUIApp input queue."""
+        key = event.character if event.character else event.key
+        self.tui_engine._input_queue.put(key)
+
+    def on_resize(self, event) -> None:
+        """Signals resize to the TUIApp engine."""
+        self.tui_engine._resize_flag = True
+
+
+# =============================================================================
+# MAIN TUIA APPLICATION ENGINE
+# =============================================================================
 
 class TUIApp:
     """
     The main application engine for the TUI.
 
     Manages:
-        - curses screen
+        - 2D window rendering buffer
         - event loop
         - automatic resizing
         - flicker-free rendering
@@ -23,7 +231,7 @@ class TUIApp:
     """
 
     def __init__(self, fps_target: int = 60, on_resize=None):
-        self.stdscr = None
+        self.stdscr = None  # Holds the 2D Window instance
         self.running = False
         self.root_frame = None
 
@@ -31,17 +239,16 @@ class TUIApp:
         self._frame_time = 1.0 / fps_target
 
         self.on_resize = on_resize
+        self._textual_app = None
+        self._input_queue = queue.Queue()
+        self._resize_flag = False
 
         # ======================================================
         # UI QUEUE
         # ======================================================
 
         self._ui_queue = queue.Queue()
-
-        # Wakes the thread currently owning the UI.
         self._ui_wakeup = threading.Event()
-
-        # Thread ID currently owning curses/UI operations.
         self._ui_thread_id = None
 
         # ======================================================
@@ -49,35 +256,12 @@ class TUIApp:
         # ======================================================
 
         self._tui_thread = None
-
-        # True while the background loop is active.
         self.background_running = False
-
-        # Requests that the background loop terminate.
         self._background_stop = threading.Event()
-
-        # Set once the background loop has completely terminated.
         self._background_finished = threading.Event()
         self._background_finished.set()
 
         self.ignore_input = False
-
-    # ==========================================================
-    # CURSES
-    # ==========================================================
-
-    def init_curses(self, stdscr):
-        """Initialize curses parameters."""
-        self.stdscr = stdscr
-
-        curses.curs_set(0)
-
-        self.stdscr.nodelay(1)
-        self.stdscr.keypad(1)
-
-        if curses.has_colors():
-            curses.start_color()
-            curses.use_default_colors()
 
     def set_root(self, frame):
         """Set the root Frame."""
@@ -100,16 +284,12 @@ class TUIApp:
     # ==========================================================
 
     def start_background_loop(self, handle_input=False):
-        """
-        Temporarily transfer TUI ownership to a background thread.
-        """
+        """Temporarily transfer TUI ownership to a background thread."""
         if not self.running:
             return
 
         if not self.root_frame:
-            raise ValueError(
-                "Call set_root() and start() before"
-            )
+            raise ValueError("Call set_root() and start() before")
 
         if self.background_running:
             return
@@ -118,7 +298,6 @@ class TUIApp:
 
         self._background_stop.clear()
         self._background_finished.clear()
-
         self.background_running = True
 
         self._tui_thread = threading.Thread(
@@ -126,102 +305,52 @@ class TUIApp:
             daemon=True,
             name="TUI-background",
         )
-
         self._tui_thread.start()
 
     def _run_background_loop(self):
-        """
-        Execute the temporary UI loop in the background thread.
-        """
+        """Execute the temporary UI loop in the background thread."""
         self._ui_thread_id = threading.get_ident()
 
         try:
-            while (
-                self.running
-                and not self._background_stop.is_set()
-            ):
+            while self.running and not self._background_stop.is_set():
                 loop_start = time.monotonic()
-
-                # Consume any old wake-up.
                 self._ui_wakeup.clear()
 
                 self.loop()
 
-                # A stop could have been requested while loop()
-                # was executing. Don't sleep in that case.
                 if self._background_stop.is_set():
                     break
 
                 elapsed = time.monotonic() - loop_start
-
                 if elapsed < self._frame_time:
-                    self._ui_wakeup.wait(
-                        self._frame_time - elapsed
-                    )
+                    self._ui_wakeup.wait(self._frame_time - elapsed)
 
         finally:
-            # ----------------------------------------------
-            # Background ownership is ending.
-            # ----------------------------------------------
-
             self.background_running = False
             self.ignore_input = False
 
             if self._ui_thread_id == threading.get_ident():
                 self._ui_thread_id = None
 
-            # This is the synchronization point used by the
-            # foreground thread and stop_background_loop().
             self._background_finished.set()
-
-            # Wake anything waiting for the background loop.
             self._ui_wakeup.set()
 
     def stop_background_loop(self):
-        """
-        Stop the temporary background TUI loop.
-
-        This method waits until the background thread has actually
-        terminated and released UI ownership.
-
-        It is safe to call:
-            - from the foreground thread
-            - from another worker thread
-            - from the background UI thread itself
-        """
+        """Stop the temporary background TUI loop safely."""
         thread = self._tui_thread
 
-        # Nothing to stop.
         if thread is None:
             self.background_running = False
             self.ignore_input = False
             return
 
-        # Request termination.
         self._background_stop.set()
-
-        # Wake it immediately if it is sleeping.
         self._ui_wakeup.set()
 
-        # ----------------------------------------------
-        # Called by the background UI thread itself.
-        #
-        # It cannot wait for itself.
-        # Its finally block will perform the cleanup.
-        # ----------------------------------------------
         if thread is threading.current_thread():
             return
 
-        # ----------------------------------------------
-        # Called by another thread.
-        #
-        # Wait for the actual ownership handoff rather
-        # than merely waiting on Thread.join().
-        # ----------------------------------------------
         self._background_finished.wait()
-
-        # At this point the background thread has released
-        # UI ownership.
         thread.join()
 
         if self._tui_thread is thread:
@@ -230,7 +359,6 @@ class TUIApp:
         self.background_running = False
         self.ignore_input = False
 
-        # If we're now the UI thread, restore ownership.
         if self.running:
             self._ui_thread_id = threading.get_ident()
 
@@ -239,12 +367,7 @@ class TUIApp:
     # ==========================================================
 
     def flush(self):
-        """
-        Wait until all UI operations queued before this call
-        have been processed.
-
-        If called from the UI thread, process them immediately.
-        """
+        """Wait until all UI operations queued before this call are processed."""
         if self.is_ui_thread():
             self._flush_queue()
             return
@@ -255,10 +378,7 @@ class TUIApp:
             done.set()
 
         self._ui_queue.put(barrier)
-
-        # Wake the current UI owner.
         self._ui_wakeup.set()
-
         done.wait()
 
     def _flush_queue(self):
@@ -268,7 +388,6 @@ class TUIApp:
                 func = self._ui_queue.get_nowait()
             except queue.Empty:
                 break
-
             func()
 
     # ==========================================================
@@ -276,59 +395,36 @@ class TUIApp:
     # ==========================================================
 
     def start(self):
-        """
-        Start the main TUI loop.
-
-        curses.wrapper() remains the outer boundary so that
-        curses restores the terminal on exceptions and
-        KeyboardInterrupt.
-        """
+        """Start the main TUI loop via Textual backend."""
         if not self.root_frame:
             raise ValueError(
-                "Cannot start TUIApp without a root frame. "
-                "Call set_root() first."
+                "Cannot start TUIApp without a root frame. Call set_root() first."
             )
 
-        curses.wrapper(self._run)
+        self._textual_app = _TextualBridgeApp(self)
+        self._textual_app.run()
 
     # ==========================================================
     # FOREGROUND LOOP
     # ==========================================================
 
-    def _run(self, stdscr):
-        """
-        Main foreground TUI loop.
-
-        The foreground thread does not touch curses while the
-        background thread owns the TUI.
-        """
+    def _run_engine(self):
+        """Main foreground TUI loop running on Textual worker thread."""
         self._ui_thread_id = threading.get_ident()
 
         try:
-            self.init_curses(stdscr)
-
             self.running = True
 
-            self.root_frame._resize_to_terminal(
-                self.stdscr
-            )
+            if self.root_frame and self.stdscr:
+                self.root_frame._resize_to_terminal(self.stdscr)
 
             while self.running:
-
-                # ==================================================
-                # BACKGROUND TUI OWNS THE SCREEN
-                # ==================================================
-
                 if self.background_running:
-
-                    # Wait until the background thread's finally
-                    # block signals that ownership has returned.
                     self._background_finished.wait()
 
                     if not self.running:
                         break
 
-                    # The foreground thread gets ownership back.
                     self._ui_thread_id = threading.get_ident()
 
                     if (
@@ -338,20 +434,12 @@ class TUIApp:
                         self._tui_thread = None
 
                     self.ignore_input = False
-
                     continue
 
-                # ==================================================
-                # CLEAN UP A NATURALLY FINISHED THREAD
-                # ==================================================
-
                 if self._tui_thread is not None:
-
                     thread = self._tui_thread
 
                     if thread.is_alive():
-                        # Ownership is ambiguous, so wait for the
-                        # actual background completion signal.
                         self._background_finished.wait()
 
                     thread.join()
@@ -362,49 +450,28 @@ class TUIApp:
                     self.background_running = False
                     self.ignore_input = False
                     self._ui_thread_id = threading.get_ident()
-
                     continue
 
-                # ==================================================
-                # NORMAL FOREGROUND FRAME
-                # ==================================================
-
                 loop_start = time.monotonic()
-
                 self._ui_wakeup.clear()
 
                 self.loop()
 
-                # A background loop could have been started by code
-                # executed during this frame.
                 if self.background_running:
                     continue
 
                 elapsed = time.monotonic() - loop_start
-
                 if elapsed < self._frame_time:
-                    self._ui_wakeup.wait(
-                        self._frame_time - elapsed
-                    )
+                    self._ui_wakeup.wait(self._frame_time - elapsed)
 
         finally:
-            # ======================================================
-            # FINAL APPLICATION CLEANUP
-            # ======================================================
-
             self.running = False
-
             self._background_stop.set()
             self._ui_wakeup.set()
 
             thread = self._tui_thread
-
-            if (
-                thread is not None
-                and thread is not threading.current_thread()
-            ):
+            if thread is not None and thread is not threading.current_thread():
                 self._background_finished.wait()
-
                 thread.join()
 
             self._tui_thread = None
@@ -419,7 +486,6 @@ class TUIApp:
     def loop(self):
         """Perform one complete update/render cycle."""
         self._flush_queue()
-
         self._handle_input()
         self._update()
         self._render()
@@ -429,19 +495,17 @@ class TUIApp:
     # ==========================================================
 
     def _handle_input(self):
-        """Fetch and dispatch one input event."""
-        try:
-            key = self.stdscr.getch()
-
-            if key != curses.ERR:
-
+        """Fetch and dispatch one input event from queue."""
+        while not self._input_queue.empty():
+            try:
+                key = self._input_queue.get_nowait()
                 if self.ignore_input:
-                    curses.flushinp()
+                    continue
                 else:
-                    self.root_frame.handle_event(key)
-
-        except curses.error:
-            pass
+                    if self.root_frame:
+                        self.root_frame.handle_event(key)
+            except queue.Empty:
+                break
 
     # ==========================================================
     # UPDATE
@@ -449,32 +513,18 @@ class TUIApp:
 
     def _update(self):
         """Handle terminal resizing."""
-        if curses.is_term_resized(
-            curses.LINES,
-            curses.COLS
-        ):
-            curses.update_lines_cols()
+        if self._resize_flag:
+            self._resize_flag = False
 
-            curses.resizeterm(
-                curses.LINES,
-                curses.COLS
-            )
+            if self.stdscr:
+                self.stdscr.clear()
+                max_y, max_x = self.stdscr.getmaxyx()
 
-            self.stdscr.clear()
+                if self.root_frame:
+                    self.root_frame._resize_to_terminal(self.stdscr)
 
-            max_y, max_x = self.stdscr.getmaxyx()
-
-            if self.root_frame:
-                self.root_frame._resize_to_terminal(
-                    self.stdscr
-                )
-
-            if callable(self.on_resize):
-                self.on_resize(
-                    self,
-                    max_x,
-                    max_y,
-                )
+                if callable(self.on_resize):
+                    self.on_resize(self, max_x, max_y)
 
     # ==========================================================
     # RENDER
@@ -482,31 +532,28 @@ class TUIApp:
 
     def _render(self):
         """Execute a flicker-free render cycle."""
+        if not self.stdscr or not self.root_frame:
+            return
+
         self.stdscr.erase()
-        self.stdscr.noutrefresh()
-
         self.root_frame.render()
-
-        curses.doupdate()
+        self.stdscr.doupdate()
 
     def clear(self):
-        self.stdscr.clear()
+        if self.stdscr:
+            self.stdscr.clear()
 
     # ==========================================================
     # QUIT
     # ==========================================================
 
     def quit(self):
-        """
-        Request application shutdown.
-
-        Does not join threads. The active loop will perform the
-        final cleanup itself.
-        """
+        """Request application shutdown."""
         self.running = False
-
         self._background_stop.set()
         self._ui_wakeup.set()
+        if self._textual_app:
+            self._textual_app.exit()
 
     # ==========================================================
     # EXTERNAL TUI HANDOFF
@@ -514,16 +561,11 @@ class TUIApp:
 
     @contextlib.contextmanager
     def suspend_for_handoff(self):
-        """
-        Temporarily give the terminal to an external TUI program.
-        """
-        curses.def_prog_mode()
-        curses.endwin()
-
-        try:
+        """Temporarily give the terminal to an external CLI/TUI program."""
+        if self._textual_app:
+            with self._textual_app.suspend():
+                yield
+                if self.stdscr:
+                    self.stdscr.clear()
+        else:
             yield
-
-        finally:
-            self.stdscr.clear()
-            curses.reset_prog_mode()
-            self.stdscr.refresh()
