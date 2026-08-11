@@ -1,19 +1,21 @@
 """
 tuia - A modular, flicker-free Python TUI engine powered by curses.
 """
-from tuia.app import TUIApp
-from tuia.base import Widget
-from tuia.frame import (
-    Frame, 
-    BORDER_NONE, 
-    BORDER_SINGLE, 
-    BORDER_DOUBLE, 
-    BORDER_ROUNDED, 
-    BORDER_ASCII
+from tuia.sync import sync, sync_wait
+from tuia.events import FocusManager
+from tuia.widgets import (
+    Label,
+    Button,
+    TextInput,
+    ProgressBar,
+    CheckBox,
+    RadioButton,
+    RadioGroup,
+    Dialog
 )
 from tuia.layout import (
-    pack, 
-    place, 
+    pack,
+    place,
     align,
     grid,
     TOPLEFT,
@@ -25,24 +27,26 @@ from tuia.layout import (
     BOTTOMLEFT,
     BOTTOM,
     BOTTOMRIGHT,
-    FILL_NONE, 
-    FILL_X, 
-    FILL_Y, 
+    FILL_NONE,
+    FILL_X,
+    FILL_Y,
     FILL_BOTH
 )
-from tuia.widgets import (
-    Label, 
-    Button, 
-    TextInput, 
-    ProgressBar, 
-    CheckBox, 
-    RadioButton, 
-    RadioGroup, 
-    Dialog
+from tuia.frame import (
+    Frame,
+    BORDER_NONE,
+    BORDER_SINGLE,
+    BORDER_DOUBLE,
+    BORDER_ROUNDED,
+    BORDER_ASCII
 )
-from tuia.styles import colors
-from tuia.events import FocusManager
-from tuia.sync import sync, sync_wait
+from tuia.app import TUIApp
+from tuia.base import Widget
+
+import gleaf
+colors = gleaf.colors
+
+# from tuia.styles import colors
 
 __all__ = [
     'TUIApp',
@@ -81,5 +85,6 @@ __all__ = [
     'colors',
     'FocusManager',
     'sync',
-    'sync_wait'
+    'sync_wait',
+    'gleaf'
 ]
