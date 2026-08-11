@@ -80,7 +80,8 @@ class SubWindow:
         clipped_text = text[:available]
         effective_attr = self._active_attr | attr
 
-        root.addstr(self._widget.y + y, self._widget.x + x, clipped_text, effective_attr)
+        root.addstr(self._widget.y + y, self._widget.x +
+                    x, clipped_text, effective_attr)
 
     def addch(self, y: int, x: int, ch: str, attr: int = 0):
         self.addstr(y, x, str(ch)[:1], attr)
@@ -102,6 +103,7 @@ class SubWindow:
 # =============================================================================
 # WIDGET BASE CLASS
 # =============================================================================
+
 
 class Widget(abc.ABC):
     """

@@ -1,7 +1,6 @@
 """
 tuia.widgets.progress_bar - Progress bar indicator.
 """
-import curses
 from tuia.base import Widget
 
 class ProgressBar(Widget):
@@ -33,7 +32,4 @@ class ProgressBar(Widget):
 
         bar = (self.fill_char * filled_len) + (self.empty_char * empty_len) + pct_str
 
-        try:
-            self.window.addstr(0, 0, bar[:self.width])
-        except curses.error:
-            pass
+        self.window.addstr(0, 0, bar[:self.width])

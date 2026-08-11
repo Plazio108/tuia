@@ -1,8 +1,8 @@
 """
 tuia.widgets.button - Interactive button widget.
 """
-import curses
 from tuia.base import Widget
+from tuia.constants import Keys, Modifiers
 
 
 class Button(Widget):
@@ -22,7 +22,7 @@ class Button(Widget):
     def process_event(self, key):
         if self.focused:
             result = super().process_event(key)
-            if key in (curses.KEY_ENTER, 10, 13, ord(' ')):
+            if key in (Keys.ENTER, Keys.SPACE):
                 if callable(self.command):
                     self.command()
                 return True
@@ -33,7 +33,7 @@ class Button(Widget):
         if not self.window:
             return
 
-        attr = curses.A_REVERSE if self.focused else curses.A_NORMAL
+        attr = Modifiers.REVERSE if self.focused else Modifiers.NORMAL
         label = self.focused_text if self.focused else self.text
         if len(label) > self.width:
             label = label[:max(1, self.width)]
@@ -41,9 +41,6 @@ class Button(Widget):
         start_x = max(0, (self.width - len(label)) // 2)
         start_y = max(0, self.height // 2)
 
-        try:
-            self.window.attron(attr)
-            self.window.addstr(start_y, start_x, label)
-            self.window.attroff(attr)
-        except curses.error:
-            pass
+        self.window.attron(attr)
+        self.window.addstr(start_y, start_x, label)
+        self.window.attroff(attr)

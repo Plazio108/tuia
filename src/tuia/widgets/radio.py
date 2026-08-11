@@ -1,8 +1,8 @@
 """
 tuia.widgets.radio - RadioButton and RadioGroup controls.
 """
-import curses
 from tuia.base import Widget
+from tuia.constants import Keys, Modifiers
 
 class RadioGroup:
     """Manages mutually exclusive RadioButtons."""
@@ -49,7 +49,7 @@ class RadioButton(Widget):
             self.checked = True
 
     def process_event(self, key):
-        if self.focused and key in (curses.KEY_ENTER, 10, 13, ord(' ')):
+        if self.focused and key in (Keys.ENTER, Keys.SPACE):
             self.select()
             return True
         return False
@@ -60,11 +60,8 @@ class RadioButton(Widget):
 
         bullet = "(•)" if self.checked else "( )"
         display_str = f"{bullet} {self.text}"[:self.width]
-        attr = curses.A_REVERSE if self.focused else curses.A_NORMAL
+        attr = Modifiers.REVERSE if self.focused else Modifiers.NORMAL
 
-        try:
-            self.window.attron(attr)
-            self.window.addstr(0, 0, display_str.ljust(self.width))
-            self.window.attroff(attr)
-        except curses.error:
-            pass
+        self.window.attron(attr)
+        self.window.addstr(0, 0, display_str.ljust(self.width))
+        self.window.attroff(attr)

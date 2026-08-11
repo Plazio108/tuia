@@ -3,9 +3,9 @@ tuia.widgets.text_input - Single-line text entry field.
 """
 
 import time
-import curses
 
 from tuia.base import Widget
+from tuia.constants import Modifiers, Keys
 
 
 class TextInput(Widget):
@@ -121,7 +121,7 @@ class TextInput(Widget):
         # Submit
         # ------------------------------------------------------
 
-        if key in (curses.KEY_ENTER, 10, 13):
+        if key == Keys.ENTER:
             if callable(self.on_submit):
                 self.on_submit(self.value)
 
@@ -131,7 +131,7 @@ class TextInput(Widget):
         # Cursor left
         # ------------------------------------------------------
 
-        elif key == curses.KEY_LEFT:
+        elif key == Keys.LEFT:
 
             self.cursor_pos = max(
                 0,
@@ -146,7 +146,7 @@ class TextInput(Widget):
         # Cursor right
         # ------------------------------------------------------
 
-        elif key == curses.KEY_RIGHT:
+        elif key == Keys.RIGHT:
 
             self.cursor_pos = min(
                 len(self.value),
@@ -161,7 +161,7 @@ class TextInput(Widget):
         # Backspace
         # ------------------------------------------------------
 
-        elif key in (curses.KEY_BACKSPACE, 8, 127):
+        elif key == Keys.BACKSPACE:
             if self.cursor_pos > 0:
                 self.value = (
                     self.value[:self.cursor_pos - 1]
@@ -178,8 +178,8 @@ class TextInput(Widget):
         # Printable character
         # ------------------------------------------------------
 
-        elif 32 <= key <= 126:
-            char = chr(key)
+        elif (len(key) == 1) and (32 <= ord(key) <= 126):
+            char = key
 
             self.value = (
                 self.value[:self.cursor_pos]
@@ -209,7 +209,7 @@ class TextInput(Widget):
 
         if self.value:
             display_text = self.value
-            attr = curses.A_NORMAL
+            attr = Modifiers.NORMAL
 
             # cursor_pos is an insertion position:
             #
@@ -247,7 +247,7 @@ class TextInput(Widget):
 
         else:
             display_text = self.placeholder
-            attr = curses.A_DIM
+            attr = Modifiers.DIM
             self.scroll_offset = 0
 
         # ------------------------------------------------------
@@ -263,17 +263,12 @@ class TextInput(Widget):
 
         self.window.attron(attr)
 
-        try:
-            self.window.addnstr(
-                0,
-                0,
-                padded_text,
-                self.width,
-            )
-        except curses.error:
-            pass
-        finally:
-            self.window.attroff(attr)
+        self.window.addstr(
+            0,
+            0,
+            padded_text
+        )
+        self.window.attroff(attr)
 
         # ------------------------------------------------------
         # Software cursor
@@ -316,12 +311,9 @@ class TextInput(Widget):
             else " "
         )
 
-        try:
-            self.window.addch(
-                0,
-                screen_cursor_pos,
-                cursor_char,
-                curses.A_REVERSE,
-            )
-        except curses.error:
-            pass
+        self.window.addch(
+            0,
+            screen_cursor_pos,
+            cursor_char,
+            Modifiers.REVERSE,
+        )

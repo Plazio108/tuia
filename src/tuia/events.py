@@ -1,8 +1,7 @@
 """
 tuia.events - Focus management and keyboard navigation routing.
 """
-import curses
-
+from tuia.constants import Keys
 
 class FocusManager:
     """
@@ -69,11 +68,11 @@ class FocusManager:
         Returns True if the key was handled.
         """
         # Tab key
-        if key == 9:
+        if key == Keys.TAB:
             self.focus_next()
             return True
         # Shift-Tab (Key code 353 in ncurses)
-        elif key == curses.KEY_BTAB:
+        elif key == Keys.SHIFT_TAB:
             self.focus_previous()
             return True
         return False

@@ -2,7 +2,7 @@
 tuia/utils.py - Drawing and zone manipulation utilities compatible with Window and SubWindow.
 """
 
-from typing import Union, Tuple, Optional
+from typing import Union, Tuple
 
 ColorType = Union[None, Tuple[int, int, int], str]
 

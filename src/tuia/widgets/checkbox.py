@@ -38,9 +38,6 @@ class CheckBox(Widget):
         display_str = f"{mark} {self.text}"[:self.width]
         attr = curses.A_REVERSE if self.focused else curses.A_NORMAL
 
-        try:
-            self.window.attron(attr)
-            self.window.addstr(0, 0, display_str.ljust(self.width))
-            self.window.attroff(attr)
-        except curses.error:
-            pass
+        self.window.attron(attr)
+        self.window.addstr(0, 0, display_str.ljust(self.width))
+        self.window.attroff(attr)

@@ -1,7 +1,6 @@
 """
 tuia.widgets.label - Label widget for displaying text.
 """
-import curses
 from tuia.base import Widget
 
 
@@ -44,7 +43,4 @@ class Label(Widget):
         else:
             start_x = 0
 
-        try:
-            self.window.addstr(0, start_x, display_text)
-        except curses.error:
-            pass
+        self.window.addstr(0, start_x, display_text)
