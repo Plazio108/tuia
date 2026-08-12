@@ -40,12 +40,6 @@ from tuia.widgets import (
     RadioGroup,
     Dialog
 )
-from tuia.utils import (
-    draw_block,
-    draw_text,
-    edit_zone_color,
-    edit_zone_modifiers
-)
 from tuia.constants import (
     Modifiers,
     Colors,
@@ -94,8 +88,4 @@ __all__ = [
     'Modifiers',
     'Colors',
     'Keys',
-    'draw_block',
-    'draw_text',
-    'edit_zone_color',
-    'edit_zone_modifiers'
 ]
