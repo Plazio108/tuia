@@ -5,7 +5,7 @@ requires-python = ">=3.13"
 [[package]]
 name = "gleaf"
 version = "0.1.0"
-source = { git = "https://github.com/Plazio108/gleaf.git#597daa0251be6e38e93d1cba181b685175741ab8" }
+source = { git = "https://github.com/Plazio108/gleaf.git#00e2ac1fd47d748b4eda75fefd129c234dea558c" }
 
 [[package]]
 name = "oakey"
