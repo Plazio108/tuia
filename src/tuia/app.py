@@ -8,7 +8,7 @@ import queue
 import threading
 import time
 import sys
-import select
+import termios
 from typing import Optional, Callable, Any
 
 from tuia.window import Window
@@ -420,15 +420,67 @@ class TUIApp:
     #         self._ui_wakeup.set()
     #         self.loop()
 
+    # @contextlib.contextmanager
+    # def suspend_for_handoff(self, clear_on_resume: bool = False):
+    #     """
+    #     Temporarily yields the terminal to external subprocesses or print calls.
+    #     Paues input polling and ensures stream buffers are flushed in strict sequence.
+    #     """
+    #     self.LOG.info("Suspending TUIApp for external handoff...")
+    #     self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
+
+    #     sys.stdout.flush()
+    #     sys.stderr.flush()
+    #     sys.__stdout__.flush()
+    #     sys.__stderr__.flush()
+
+    #     original_stdout = sys.stdout
+    #     original_stderr = sys.stderr
+    #     sys.stdout = sys.__stdout__
+    #     sys.stderr = sys.__stderr__
+
+    #     if self.stdscr and hasattr(self.stdscr.canvas, 'exit_alternate_screen'):
+    #         self.stdscr.canvas.exit_alternate_screen()
+
+    #     sys.stdout.flush()
+
+    #     try:
+    #         with self.key_listener.handoff():
+    #             self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
+    #             yield
+    #     finally:
+    #         sys.stdout.flush()
+    #         sys.stderr.flush()
+
+    #         if clear_on_resume:
+    #             sys.stdout.write("\033[2J\033[3J\033[H")
+    #             sys.stdout.flush()
+
+    #         if self.stdscr and hasattr(self.stdscr.canvas, 'enter_alternate_screen'):
+    #             self.stdscr.canvas.enter_alternate_screen()
+
+    #         sys.stdout = original_stdout
+    #         sys.stderr = original_stderr
+
+    #         if self.stdscr:
+    #             self.stdscr.force_full_repaint()
+    #         if self.root_frame and self.stdscr:
+    #             self.root_frame._resize_to_terminal(self.stdscr)
+
+    #         self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
+    #         self._ui_wakeup.set()
+    #         self.loop()
+
     @contextlib.contextmanager
     def suspend_for_handoff(self, clear_on_resume: bool = False):
         """
         Temporarily yields the terminal to external subprocesses or print calls.
-        Paues input polling and ensures stream buffers are flushed in strict sequence.
+        Pauses input polling and ensures stream buffers are flushed in strict sequence.
         """
         self.LOG.info("Suspending TUIApp for external handoff...")
         self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
 
+        # 1. Flush active outputs
         sys.stdout.flush()
         sys.stderr.flush()
         sys.__stdout__.flush()
@@ -439,34 +491,46 @@ class TUIApp:
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
 
-        if self.stdscr and hasattr(self.stdscr.canvas, 'exit_alternate_screen'):
-            self.stdscr.canvas.exit_alternate_screen()
+        # 2. PAUSE KEY LISTENER FIRST before touching termios/screen
+        with self.key_listener.handoff():
+            self.LOG.debug(f"input listener inside handoff running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
 
-        sys.stdout.flush()
+            # 3. Purge lingering bytes (like the hotkey that triggered handoff) from stdin buffer
+            if termios is not None:
+                try:
+                    termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
+                except Exception as e:
+                    self.LOG.warning(f"Failed to flush stdin buffer before handoff: {e}")
 
-        try:
-            with self.key_listener.handoff():
-                self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
-                yield
-        finally:
+            # 4. Exit alternate screen while key listener is safely paused
+            if self.stdscr and hasattr(self.stdscr.canvas, 'exit_alternate_screen'):
+                self.stdscr.canvas.exit_alternate_screen()
+
             sys.stdout.flush()
-            sys.stderr.flush()
 
-            if clear_on_resume:
-                sys.stdout.write("\033[2J\033[3J\033[H")
+            try:
+                yield
+            finally:
                 sys.stdout.flush()
+                sys.stderr.flush()
 
-            if self.stdscr and hasattr(self.stdscr.canvas, 'enter_alternate_screen'):
-                self.stdscr.canvas.enter_alternate_screen()
+                if clear_on_resume:
+                    sys.stdout.write("\033[2J\033[3J\033[H")
+                    sys.stdout.flush()
 
-            sys.stdout = original_stdout
-            sys.stderr = original_stderr
+                # 5. Restore alternate screen before resuming key listener
+                if self.stdscr and hasattr(self.stdscr.canvas, 'enter_alternate_screen'):
+                    self.stdscr.canvas.enter_alternate_screen()
 
-            if self.stdscr:
-                self.stdscr.force_full_repaint()
-            if self.root_frame and self.stdscr:
-                self.root_frame._resize_to_terminal(self.stdscr)
+        # 6. Restore logging handles & redraw TUI
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
 
-            self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
-            self._ui_wakeup.set()
-            self.loop()
+        if self.stdscr:
+            self.stdscr.force_full_repaint()
+        if self.root_frame and self.stdscr:
+            self.root_frame._resize_to_terminal(self.stdscr)
+
+        self.LOG.debug(f"input listener after handoff running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
+        self._ui_wakeup.set()
+        self.loop()

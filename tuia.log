@@ -1,11 +1,11 @@
-[13:55:55][MainThread][INFO] === TUIA Engine Logging Started ===
-[13:55:55][MainThread][INFO] Launching TUIApp via gleaf engine...
-[13:55:55][MainThread][INFO] Loaded PurePythonCanvas backend
-[13:55:55][MainThread][DEBUG] input listener running: True paused: False
-[13:55:58][MainThread][INFO] Suspending TUIApp for external handoff...
-[13:55:58][MainThread][DEBUG] input listener running: True paused: False
-[13:55:58][MainThread][DEBUG] input listener running: True paused: True
-[13:56:01][MainThread][DEBUG] input listener running: True paused: False
-[13:56:03][MainThread][INFO] Shutdown requested via app.quit()
-[13:56:03][MainThread][INFO] Engine thread shutting down...
-[13:56:03][MainThread][INFO] TUIApp session ended.
+[14:54:03][MainThread][INFO] === TUIA Engine Logging Started ===
+[14:54:03][MainThread][INFO] Launching TUIApp via gleaf engine...
+[14:54:03][MainThread][INFO] Loaded PurePythonCanvas backend
+[14:54:03][MainThread][DEBUG] input listener running: True paused: False
+[14:54:07][MainThread][INFO] Suspending TUIApp for external handoff...
+[14:54:07][MainThread][DEBUG] input listener running: True paused: False
+[14:54:07][MainThread][DEBUG] input listener inside handoff running: True paused: True
+[14:54:10][MainThread][DEBUG] input listener after handoff running: True paused: False
+[14:54:11][MainThread][INFO] Shutdown requested via app.quit()
+[14:54:11][MainThread][INFO] Engine thread shutting down...
+[14:54:11][MainThread][INFO] TUIApp session ended.
