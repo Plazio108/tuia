@@ -12,6 +12,7 @@ import termios
 from typing import Optional, Callable, Any
 
 from tuia.window import Window
+from tuia.constants import Keys
 from gleaf import managed_canvas
 from oakey import KeyListener
 
@@ -330,6 +331,8 @@ class TUIApp:
         while not self._input_queue.empty():
             try:
                 raw_key = self._input_queue.get_nowait()
+                if raw_key == Keys.:
+                    raise KeyboardInterrupt
                 if self.ignore_input:
                     continue
                 if self.root_frame:
