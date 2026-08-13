@@ -10,7 +10,7 @@ source = { git = "https://github.com/Plazio108/gleaf.git#e39a874fa9bcca3879b3d48
 [[package]]
 name = "oakey"
 version = "0.1.0"
-source = { git = "https://github.com/Plazio108/oakey.git#8578cc936c79e13ed183e3ebdff863ae456db3e5" }
+source = { git = "https://github.com/Plazio108/oakey.git#150aa4af537ca1cb36657ac078f863912df1a2d0" }
 
 [[package]]
 name = "tuia"

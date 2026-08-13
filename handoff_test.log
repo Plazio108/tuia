@@ -1,0 +1,330 @@
+[16:11:17][MainThread][INFO] === TUIA Engine Logging Started ===
+[16:11:17][MainThread][INFO] Starting TUIApp Yazi test script...
+[16:11:17][MainThread][INFO] Launching TUIApp via gleaf engine...
+[16:11:17][MainThread][INFO] Loaded RichCanvas backend
+[16:11:17][MainThread][DEBUG] input listener running: True paused: False
+[16:11:18][MainThread][INFO] Received key event: 'y'
+[16:11:18][MainThread][INFO] Triggering Yazi handoff...
+[16:11:18][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:18][MainThread][DEBUG] input listener running: True paused: False
+[16:11:18][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:22][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:22][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:22][MainThread][INFO] Returned from Yazi handoff.
+[16:11:23][MainThread][INFO] Received key event: 'y'
+[16:11:23][MainThread][INFO] Triggering Yazi handoff...
+[16:11:23][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:23][MainThread][DEBUG] input listener running: True paused: False
+[16:11:23][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:23][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:23][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:23][MainThread][INFO] Returned from Yazi handoff.
+[16:11:24][MainThread][INFO] Received key event: 'y'
+[16:11:24][MainThread][INFO] Triggering Yazi handoff...
+[16:11:24][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:24][MainThread][DEBUG] input listener running: True paused: False
+[16:11:24][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:24][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:24][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:24][MainThread][INFO] Returned from Yazi handoff.
+[16:11:24][MainThread][INFO] Received key event: 'y'
+[16:11:24][MainThread][INFO] Triggering Yazi handoff...
+[16:11:24][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:24][MainThread][DEBUG] input listener running: True paused: False
+[16:11:24][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:24][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:24][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:24][MainThread][INFO] Returned from Yazi handoff.
+[16:11:25][MainThread][INFO] Received key event: 'y'
+[16:11:25][MainThread][INFO] Triggering Yazi handoff...
+[16:11:25][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:25][MainThread][DEBUG] input listener running: True paused: False
+[16:11:25][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:25][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:25][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:25][MainThread][INFO] Returned from Yazi handoff.
+[16:11:25][MainThread][INFO] Received key event: 'y'
+[16:11:25][MainThread][INFO] Triggering Yazi handoff...
+[16:11:25][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:25][MainThread][DEBUG] input listener running: True paused: False
+[16:11:25][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:25][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:25][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:25][MainThread][INFO] Returned from Yazi handoff.
+[16:11:26][MainThread][INFO] Received key event: 'y'
+[16:11:26][MainThread][INFO] Triggering Yazi handoff...
+[16:11:26][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:26][MainThread][DEBUG] input listener running: True paused: False
+[16:11:26][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:26][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:26][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:26][MainThread][INFO] Returned from Yazi handoff.
+[16:11:26][MainThread][INFO] Received key event: 'y'
+[16:11:26][MainThread][INFO] Triggering Yazi handoff...
+[16:11:26][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:26][MainThread][DEBUG] input listener running: True paused: False
+[16:11:26][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:26][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:26][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:26][MainThread][INFO] Returned from Yazi handoff.
+[16:11:27][MainThread][INFO] Received key event: 'y'
+[16:11:27][MainThread][INFO] Triggering Yazi handoff...
+[16:11:27][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:27][MainThread][DEBUG] input listener running: True paused: False
+[16:11:27][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:27][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:27][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:27][MainThread][INFO] Returned from Yazi handoff.
+[16:11:27][MainThread][INFO] Received key event: 'y'
+[16:11:27][MainThread][INFO] Triggering Yazi handoff...
+[16:11:27][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:27][MainThread][DEBUG] input listener running: True paused: False
+[16:11:27][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:27][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:27][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:27][MainThread][INFO] Returned from Yazi handoff.
+[16:11:28][MainThread][INFO] Received key event: 'y'
+[16:11:28][MainThread][INFO] Triggering Yazi handoff...
+[16:11:28][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:28][MainThread][DEBUG] input listener running: True paused: False
+[16:11:28][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:28][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:28][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:28][MainThread][INFO] Returned from Yazi handoff.
+[16:11:28][MainThread][INFO] Received key event: 'y'
+[16:11:28][MainThread][INFO] Triggering Yazi handoff...
+[16:11:28][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:28][MainThread][DEBUG] input listener running: True paused: False
+[16:11:28][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:28][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:28][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:28][MainThread][INFO] Returned from Yazi handoff.
+[16:11:29][MainThread][INFO] Received key event: 'y'
+[16:11:29][MainThread][INFO] Triggering Yazi handoff...
+[16:11:29][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:29][MainThread][DEBUG] input listener running: True paused: False
+[16:11:29][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:29][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:29][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:29][MainThread][INFO] Returned from Yazi handoff.
+[16:11:29][MainThread][INFO] Received key event: 'y'
+[16:11:29][MainThread][INFO] Triggering Yazi handoff...
+[16:11:29][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:29][MainThread][DEBUG] input listener running: True paused: False
+[16:11:29][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:29][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:29][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:29][MainThread][INFO] Returned from Yazi handoff.
+[16:11:30][MainThread][INFO] Received key event: 'y'
+[16:11:30][MainThread][INFO] Triggering Yazi handoff...
+[16:11:30][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:30][MainThread][DEBUG] input listener running: True paused: False
+[16:11:30][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:30][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:30][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:30][MainThread][INFO] Returned from Yazi handoff.
+[16:11:30][MainThread][INFO] Received key event: 'y'
+[16:11:30][MainThread][INFO] Triggering Yazi handoff...
+[16:11:30][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:30][MainThread][DEBUG] input listener running: True paused: False
+[16:11:30][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:30][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:30][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:30][MainThread][INFO] Returned from Yazi handoff.
+[16:11:31][MainThread][INFO] Received key event: 'y'
+[16:11:31][MainThread][INFO] Triggering Yazi handoff...
+[16:11:31][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:31][MainThread][DEBUG] input listener running: True paused: False
+[16:11:31][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:31][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:31][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:31][MainThread][INFO] Returned from Yazi handoff.
+[16:11:31][MainThread][INFO] Received key event: 'y'
+[16:11:31][MainThread][INFO] Triggering Yazi handoff...
+[16:11:31][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:31][MainThread][DEBUG] input listener running: True paused: False
+[16:11:31][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:32][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:32][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:32][MainThread][INFO] Returned from Yazi handoff.
+[16:11:32][MainThread][INFO] Received key event: 'y'
+[16:11:32][MainThread][INFO] Triggering Yazi handoff...
+[16:11:32][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:32][MainThread][DEBUG] input listener running: True paused: False
+[16:11:32][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:33][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:33][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:33][MainThread][INFO] Returned from Yazi handoff.
+[16:11:33][MainThread][INFO] Received key event: 'y'
+[16:11:33][MainThread][INFO] Triggering Yazi handoff...
+[16:11:33][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:33][MainThread][DEBUG] input listener running: True paused: False
+[16:11:33][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:34][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:34][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:34][MainThread][INFO] Returned from Yazi handoff.
+[16:11:34][MainThread][INFO] Received key event: 'y'
+[16:11:34][MainThread][INFO] Triggering Yazi handoff...
+[16:11:34][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:34][MainThread][DEBUG] input listener running: True paused: False
+[16:11:34][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:34][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:34][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:34][MainThread][INFO] Returned from Yazi handoff.
+[16:11:35][MainThread][INFO] Received key event: 'y'
+[16:11:35][MainThread][INFO] Triggering Yazi handoff...
+[16:11:35][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:35][MainThread][DEBUG] input listener running: True paused: False
+[16:11:35][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:35][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:35][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:35][MainThread][INFO] Returned from Yazi handoff.
+[16:11:35][MainThread][INFO] Received key event: 'y'
+[16:11:35][MainThread][INFO] Triggering Yazi handoff...
+[16:11:35][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:35][MainThread][DEBUG] input listener running: True paused: False
+[16:11:35][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:35][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:35][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:35][MainThread][INFO] Returned from Yazi handoff.
+[16:11:36][MainThread][INFO] Received key event: 'y'
+[16:11:36][MainThread][INFO] Triggering Yazi handoff...
+[16:11:36][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:36][MainThread][DEBUG] input listener running: True paused: False
+[16:11:36][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:36][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:36][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:36][MainThread][INFO] Returned from Yazi handoff.
+[16:11:36][MainThread][INFO] Received key event: 'y'
+[16:11:36][MainThread][INFO] Triggering Yazi handoff...
+[16:11:36][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:36][MainThread][DEBUG] input listener running: True paused: False
+[16:11:36][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:36][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:36][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:36][MainThread][INFO] Returned from Yazi handoff.
+[16:11:36][MainThread][INFO] Received key event: 'y'
+[16:11:36][MainThread][INFO] Triggering Yazi handoff...
+[16:11:36][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:36][MainThread][DEBUG] input listener running: True paused: False
+[16:11:36][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:37][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:37][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:37][MainThread][INFO] Returned from Yazi handoff.
+[16:11:37][MainThread][INFO] Received key event: 'y'
+[16:11:37][MainThread][INFO] Triggering Yazi handoff...
+[16:11:37][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:37][MainThread][DEBUG] input listener running: True paused: False
+[16:11:37][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:37][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:37][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:37][MainThread][INFO] Returned from Yazi handoff.
+[16:11:38][MainThread][INFO] Received key event: 'y'
+[16:11:38][MainThread][INFO] Triggering Yazi handoff...
+[16:11:38][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:38][MainThread][DEBUG] input listener running: True paused: False
+[16:11:38][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:38][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:38][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:38][MainThread][INFO] Returned from Yazi handoff.
+[16:11:38][MainThread][INFO] Received key event: 'y'
+[16:11:38][MainThread][INFO] Triggering Yazi handoff...
+[16:11:38][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:38][MainThread][DEBUG] input listener running: True paused: False
+[16:11:38][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:38][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:38][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:38][MainThread][INFO] Returned from Yazi handoff.
+[16:11:39][MainThread][INFO] Received key event: 'y'
+[16:11:39][MainThread][INFO] Triggering Yazi handoff...
+[16:11:39][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:39][MainThread][DEBUG] input listener running: True paused: False
+[16:11:39][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:39][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:39][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:39][MainThread][INFO] Returned from Yazi handoff.
+[16:11:39][MainThread][INFO] Received key event: 'y'
+[16:11:39][MainThread][INFO] Triggering Yazi handoff...
+[16:11:39][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:39][MainThread][DEBUG] input listener running: True paused: False
+[16:11:39][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:39][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:39][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:39][MainThread][INFO] Returned from Yazi handoff.
+[16:11:40][MainThread][INFO] Received key event: 'y'
+[16:11:40][MainThread][INFO] Triggering Yazi handoff...
+[16:11:40][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:40][MainThread][DEBUG] input listener running: True paused: False
+[16:11:40][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:40][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:40][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:40][MainThread][INFO] Returned from Yazi handoff.
+[16:11:40][MainThread][INFO] Received key event: 'y'
+[16:11:40][MainThread][INFO] Triggering Yazi handoff...
+[16:11:40][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:40][MainThread][DEBUG] input listener running: True paused: False
+[16:11:40][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:40][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:40][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:40][MainThread][INFO] Returned from Yazi handoff.
+[16:11:41][MainThread][INFO] Received key event: 'y'
+[16:11:41][MainThread][INFO] Triggering Yazi handoff...
+[16:11:41][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:41][MainThread][DEBUG] input listener running: True paused: False
+[16:11:41][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:41][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:41][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:41][MainThread][INFO] Returned from Yazi handoff.
+[16:11:41][MainThread][INFO] Received key event: 'y'
+[16:11:41][MainThread][INFO] Triggering Yazi handoff...
+[16:11:41][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:41][MainThread][DEBUG] input listener running: True paused: False
+[16:11:41][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:42][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:42][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:42][MainThread][INFO] Returned from Yazi handoff.
+[16:11:42][MainThread][INFO] Received key event: 'y'
+[16:11:42][MainThread][INFO] Triggering Yazi handoff...
+[16:11:42][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:42][MainThread][DEBUG] input listener running: True paused: False
+[16:11:42][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:42][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:42][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:42][MainThread][INFO] Returned from Yazi handoff.
+[16:11:42][MainThread][INFO] Received key event: 'y'
+[16:11:42][MainThread][INFO] Triggering Yazi handoff...
+[16:11:42][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:42][MainThread][DEBUG] input listener running: True paused: False
+[16:11:42][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:43][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:43][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:43][MainThread][INFO] Returned from Yazi handoff.
+[16:11:43][MainThread][INFO] Received key event: 'y'
+[16:11:43][MainThread][INFO] Triggering Yazi handoff...
+[16:11:43][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:43][MainThread][DEBUG] input listener running: True paused: False
+[16:11:43][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:43][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:43][MainThread][INFO] Received key event: 'y'
+[16:11:43][MainThread][INFO] Triggering Yazi handoff...
+[16:11:43][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:43][MainThread][DEBUG] input listener running: True paused: False
+[16:11:43][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:43][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:43][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:43][MainThread][INFO] Returned from Yazi handoff.
+[16:11:43][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:43][MainThread][INFO] Returned from Yazi handoff.
+[16:11:43][MainThread][INFO] Received key event: 'y'
+[16:11:43][MainThread][INFO] Triggering Yazi handoff...
+[16:11:43][MainThread][INFO] Suspending TUIApp for external handoff...
+[16:11:43][MainThread][DEBUG] input listener running: True paused: False
+[16:11:43][MainThread][DEBUG] input listener inside handoff running: False paused: False
+[16:11:43][MainThread][DEBUG] input listener after handoff running: True paused: False
+[16:11:43][MainThread][INFO] Resumed TUIApp after handoff.
+[16:11:43][MainThread][INFO] Returned from Yazi handoff.
+[16:11:43][MainThread][INFO] Received key event: 'q'
+[16:11:43][MainThread][INFO] Quit requested.
+[16:11:43][MainThread][INFO] Shutdown requested via app.quit()
+[16:11:43][MainThread][INFO] Engine thread shutting down...
+[16:11:44][MainThread][INFO] TUIApp session ended.

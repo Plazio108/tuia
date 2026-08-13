@@ -471,16 +471,16 @@ class TUIApp:
     #         self._ui_wakeup.set()
     #         self.loop()
 
+
     @contextlib.contextmanager
     def suspend_for_handoff(self, clear_on_resume: bool = False):
         """
         Temporarily yields the terminal to external subprocesses or print calls.
-        Pauses input polling and ensures stream buffers are flushed in strict sequence.
         """
         self.LOG.info("Suspending TUIApp for external handoff...")
         self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
 
-        # 1. Flush active outputs
+        # 1. Flush all output streams
         sys.stdout.flush()
         sys.stderr.flush()
         sys.__stdout__.flush()
@@ -491,22 +491,24 @@ class TUIApp:
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
 
-        # 2. PAUSE KEY LISTENER FIRST before touching termios/screen
-        with self.key_listener.handoff():
+        # 2. Pause the key listener first via its handoff context manager
+        # with self.key_listener.handoff():
+        if True:
+            self.key_listener.stop()
+            
             self.LOG.debug(f"input listener inside handoff running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
 
-            # 3. Purge lingering bytes (like the hotkey that triggered handoff) from stdin buffer
-            if termios is not None:
-                try:
-                    termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
-                except Exception as e:
-                    self.LOG.warning(f"Failed to flush stdin buffer before handoff: {e}")
-
-            # 4. Exit alternate screen while key listener is safely paused
+            # 3. Exit alternate screen (restores terminal cooked mode)
             if self.stdscr and hasattr(self.stdscr.canvas, 'exit_alternate_screen'):
-                self.stdscr.canvas.exit_alternate_screen()
+                self._run_on_main_thread(self.stdscr.canvas.exit_alternate_screen)
 
             sys.stdout.flush()
+
+            # 4. CRITICAL: Purge the triggering hotkey from stdin so Yazi gets a completely clean stream
+            try:
+                termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
+            except Exception as e:
+                self.LOG.warning(f"Failed to flush stdin buffer: {e}")
 
             try:
                 yield
@@ -518,19 +520,22 @@ class TUIApp:
                     sys.stdout.write("\033[2J\033[3J\033[H")
                     sys.stdout.flush()
 
-                # 5. Restore alternate screen before resuming key listener
+                # 5. Re-enter alternate screen before key listener resumes
                 if self.stdscr and hasattr(self.stdscr.canvas, 'enter_alternate_screen'):
-                    self.stdscr.canvas.enter_alternate_screen()
+                    self._run_on_main_thread(self.stdscr.canvas.enter_alternate_screen)
 
-        # 6. Restore logging handles & redraw TUI
+        self.key_listener.start()
+        
+        # 6. Restore original log redirects
         sys.stdout = original_stdout
         sys.stderr = original_stderr
 
         if self.stdscr:
             self.stdscr.force_full_repaint()
         if self.root_frame and self.stdscr:
-            self.root_frame._resize_to_terminal(self.stdscr)
+            self._run_on_main_thread(self.root_frame._resize_to_terminal, self.stdscr)
 
         self.LOG.debug(f"input listener after handoff running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
         self._ui_wakeup.set()
         self.loop()
+        self.LOG.info("Resumed TUIApp after handoff.")
