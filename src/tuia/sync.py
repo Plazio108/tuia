@@ -6,6 +6,11 @@ import functools
 import inspect
 import threading
 
+from typing import ParamSpec, TypeVar, Callable
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
 
 def _get_app(instance, signature, args, kwargs):
     """
@@ -34,7 +39,7 @@ def _get_app(instance, signature, args, kwargs):
     return None
 
 
-def sync(func):
+def sync(func: Callable[P, R]) -> Callable[P, R]:
     """
     Execute a function on the TUI thread.
 
@@ -82,7 +87,7 @@ def sync(func):
     return wrapper
 
 
-def sync_wait(func):
+def sync_wait(func: Callable[P, R]) -> Callable[P, R]:
     """
     Execute a function on the TUI thread.
 

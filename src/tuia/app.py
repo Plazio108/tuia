@@ -5,16 +5,18 @@ tuia.app - Core engine and lifecycle management for the TUI (gleaf Backend).
 import contextlib
 import logging
 import queue
-import threading
-import time
 import sys
 import termios
-from typing import Optional, Callable, Any
+import threading
+import time
+from collections.abc import Callable
+from typing import Any
 
-from tuia.window import Window
-from tuia.constants import Keys
 from gleaf import managed_canvas
 from oakey import KeyListener
+
+from tuia.constants import Keys
+from tuia.window import Window
 
 
 @contextlib.contextmanager
@@ -27,6 +29,7 @@ def tuia_app_context(log_file="tuia.log"):
     original_stderr = sys.stderr
 
     with open(log_file, "a", encoding="utf-8") as log_f:
+
         class LogWriter:
             def __init__(self, target):
                 self._target = target
@@ -64,10 +67,16 @@ class TUIApp:
 
     LOG = logging.getLogger("tuia")
 
-    def __init__(self, fps_target: int = 60, on_resize=None, log_file: str = "tuia.log", backend: str = "auto"):
+    def __init__(
+        self,
+        fps_target: int = 60,
+        on_resize=None,
+        log_file: str = "tuia.log",
+        backend: str = "auto",
+    ):
         self._setup_logger(log_file)
 
-        self.stdscr: Optional[Window] = None
+        self.stdscr: Window | None = None
         self.running = False
         self.root_frame = None
         self._backend = backend
@@ -77,7 +86,7 @@ class TUIApp:
 
         self.on_resize = on_resize
         self.key_listener = KeyListener()
-        self._input_queue = None
+        self._input_queue: queue.Queue | None = None
         self._resize_flag = False
 
         self._ui_queue = queue.Queue()
@@ -99,7 +108,7 @@ class TUIApp:
             handler = logging.FileHandler(log_file, mode="w", encoding="utf-8")
             formatter = logging.Formatter(
                 "[%(asctime)s][%(threadName)s][%(levelname)s] %(message)s",
-                datefmt="%H:%M:%S"
+                datefmt="%H:%M:%S",
             )
             handler.setFormatter(formatter)
             cls.LOG.addHandler(handler)
@@ -179,6 +188,12 @@ class TUIApp:
                 elapsed = time.monotonic() - loop_start
                 if elapsed < self._frame_time:
                     self._ui_wakeup.wait(self._frame_time - elapsed)
+        except BaseException as e:
+
+            def raise_error(error: BaseException = e):
+                raise error
+
+            self._run_on_main_thread(raise_error)
         finally:
             self.background_running = False
             self.ignore_input = False
@@ -227,8 +242,7 @@ class TUIApp:
             except queue.Empty:
                 break
             except Exception as e:
-                self.LOG.exception(
-                    f"Exception during queued UI operation: {e}")
+                self.LOG.exception(f"Exception during queued UI operation: {e}")
 
     # ==========================================================
     # MAIN ENTRY POINT & INPUT POLLING
@@ -244,12 +258,13 @@ class TUIApp:
         self.LOG.info(f"Loaded {type(self.stdscr.canvas).__name__} backend")
 
         # managed_canvas safely initializes termios settings and alternate screen
-        with managed_canvas(self.stdscr.canvas):
+        with managed_canvas(self.stdscr.canvas), self.key_listener:
             # Block main thread with the UI Enginee
-            with self.key_listener:
-                self._input_queue = self.key_listener.queue
-                self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
-                self._run_engine()
+            self._input_queue = self.key_listener.queue
+            self.LOG.debug(
+                f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}"
+            )
+            self._run_engine()
 
         self.LOG.info("TUIApp session ended.")
 
@@ -347,8 +362,9 @@ class TUIApp:
             new_h, new_w = self.stdscr.getmaxyx()
 
             if new_w != old_w or new_h != old_h:
-                self.LOG.info(f"Terminal resize detected ({
-                              old_w}x{old_h} -> {new_w}x{new_h})")
+                self.LOG.info(
+                    f"Terminal resize detected ({old_w}x{old_h} -> {new_w}x{new_h})"
+                )
                 self._resize_flag = True
 
         if self._resize_flag:
@@ -475,14 +491,15 @@ class TUIApp:
     #         self._ui_wakeup.set()
     #         self.loop()
 
-
     @contextlib.contextmanager
     def suspend_for_handoff(self, clear_on_resume: bool = False):
         """
         Temporarily yields the terminal to external subprocesses or print calls.
         """
         self.LOG.info("Suspending TUIApp for external handoff...")
-        self.LOG.debug(f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
+        self.LOG.debug(
+            f"input listener running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}"
+        )
 
         # 1. Flush all output streams
         sys.stdout.flush()
@@ -499,11 +516,13 @@ class TUIApp:
         # with self.key_listener.handoff():
         if True:
             self.key_listener.stop()
-            
-            self.LOG.debug(f"input listener inside handoff running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
+
+            self.LOG.debug(
+                f"input listener inside handoff running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}"
+            )
 
             # 3. Exit alternate screen (restores terminal cooked mode)
-            if self.stdscr and hasattr(self.stdscr.canvas, 'exit_alternate_screen'):
+            if self.stdscr and hasattr(self.stdscr.canvas, "exit_alternate_screen"):
                 self._run_on_main_thread(self.stdscr.canvas.exit_alternate_screen)
 
             sys.stdout.flush()
@@ -525,11 +544,13 @@ class TUIApp:
                     sys.stdout.flush()
 
                 # 5. Re-enter alternate screen before key listener resumes
-                if self.stdscr and hasattr(self.stdscr.canvas, 'enter_alternate_screen'):
+                if self.stdscr and hasattr(
+                    self.stdscr.canvas, "enter_alternate_screen"
+                ):
                     self._run_on_main_thread(self.stdscr.canvas.enter_alternate_screen)
 
         self.key_listener.start()
-        
+
         # 6. Restore original log redirects
         sys.stdout = original_stdout
         sys.stderr = original_stderr
@@ -539,7 +560,9 @@ class TUIApp:
         if self.root_frame and self.stdscr:
             self._run_on_main_thread(self.root_frame._resize_to_terminal, self.stdscr)
 
-        self.LOG.debug(f"input listener after handoff running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}")
+        self.LOG.debug(
+            f"input listener after handoff running: {self.key_listener.is_running()} paused: {self.key_listener.is_paused()}"
+        )
         self._ui_wakeup.set()
         self.loop()
         self.LOG.info("Resumed TUIApp after handoff.")

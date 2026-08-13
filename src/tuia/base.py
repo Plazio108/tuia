@@ -1,8 +1,8 @@
 """
 tuia.base - Base Widget class defining geometry, visibility, and Z-indexing (Textual 2D Layer).
 """
+
 import abc
-from typing import Optional, Tuple
 from tuia.constants import Modifiers
 
 from tuia.sync import sync, sync_wait
@@ -12,9 +12,10 @@ from tuia.sync import sync, sync_wait
 # 2D SUB-WINDOW VIRTUAL VIEW (curses.newwin Replacement)
 # =============================================================================
 
+
 class SubWindow:
     """
-    A virtual sub-window wrapper that maps local widget coordinates (y, x) 
+    A virtual sub-window wrapper that maps local widget coordinates (y, x)
     to global coordinates on the root Textual 2D canvas buffer.
     """
 
@@ -26,7 +27,7 @@ class SubWindow:
     def _root_window(self):
         return self._widget._get_root_window()
 
-    def getmaxyx(self) -> Tuple[int, int]:
+    def getmaxyx(self) -> tuple[int, int]:
         return self._widget.height, self._widget.width
 
     # =========================================================================
@@ -63,7 +64,7 @@ class SubWindow:
 
     def addstr(self, y: int, x: int, text: str, attr: int = 0):
         """
-        Draws text using local coordinates. Combines active window attributes 
+        Draws text using local coordinates. Combines active window attributes
         with any inline attr parameter.
         """
         root = self._root_window
@@ -80,8 +81,9 @@ class SubWindow:
         clipped_text = text[:available]
         effective_attr = self._active_attr | attr
 
-        root.addstr(self._widget.y + y, self._widget.x +
-                    x, clipped_text, effective_attr)
+        root.addstr(
+            self._widget.y + y, self._widget.x + x, clipped_text, effective_attr
+        )
 
     def addch(self, y: int, x: int, ch: str, attr: int = 0):
         self.addstr(y, x, str(ch)[:1], attr)
@@ -99,6 +101,7 @@ class SubWindow:
         root = self._root_window
         if root:
             root.refresh()
+
 
 # =============================================================================
 # WIDGET BASE CLASS
@@ -140,11 +143,7 @@ class Widget(abc.ABC):
 
         init = cls.__dict__.get("__init__")
 
-        if init is not None and not getattr(
-            init,
-            "_ui_sync_wrapped",
-            False
-        ):
+        if init is not None and not getattr(init, "_ui_sync_wrapped", False):
             cls.__init__ = sync_wait(init)
 
     def _get_root_window(self):
@@ -232,7 +231,7 @@ class Widget(abc.ABC):
     @sync
     def unbind(self, event_type, callback=None):
         """
-        Removes an event listener callback. 
+        Removes an event listener callback.
         If callback is None, removes all listeners for the given event_type.
         """
         if event_type in self.listeners:
