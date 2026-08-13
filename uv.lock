@@ -5,12 +5,12 @@ requires-python = ">=3.13"
 [[package]]
 name = "gleaf"
 version = "0.1.0"
-source = { git = "https://github.com/Plazio108/gleaf.git#00e2ac1fd47d748b4eda75fefd129c234dea558c" }
+source = { git = "https://github.com/Plazio108/gleaf.git#e39a874fa9bcca3879b3d48adc8d7a5608ea5913" }
 
 [[package]]
 name = "oakey"
 version = "0.1.0"
-source = { git = "https://github.com/Plazio108/oakey.git#268e2748f1b80e3d68ab2034640bcab4dd85f793" }
+source = { git = "https://github.com/Plazio108/oakey.git#8578cc936c79e13ed183e3ebdff863ae456db3e5" }
 
 [[package]]
 name = "tuia"
