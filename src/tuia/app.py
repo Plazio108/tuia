@@ -193,13 +193,13 @@ class TUIApp:
             def raise_error(error: BaseException = e):
                 raise error
 
-            self._run_on_main_thread(raise_error)
         finally:
             self.background_running = False
             self.ignore_input = False
             if self._ui_thread_id == threading.get_ident():
                 self._ui_thread_id = None
             self._background_finished.set()
+            self._run_on_main_thread(raise_error)
             self._ui_wakeup.set()
 
     def stop_background_loop(self):
