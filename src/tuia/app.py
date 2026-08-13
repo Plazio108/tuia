@@ -63,12 +63,13 @@ class TUIApp:
 
     LOG = logging.getLogger("tuia")
 
-    def __init__(self, fps_target: int = 60, on_resize=None, log_file: str = "tuia.log"):
+    def __init__(self, fps_target: int = 60, on_resize=None, log_file: str = "tuia.log", backend: str = "auto"):
         self._setup_logger(log_file)
 
         self.stdscr: Optional[Window] = None
         self.running = False
         self.root_frame = None
+        self._backend = backend
 
         self._fps_target = fps_target
         self._frame_time = 1.0 / fps_target
@@ -238,7 +239,7 @@ class TUIApp:
             raise ValueError("Call set_root() first.")
 
         self.LOG.info("Launching TUIApp via gleaf engine...")
-        self.stdscr = Window(self)
+        self.stdscr = Window(self, backend=self._backend)
         self.LOG.info(f"Loaded {type(self.stdscr.canvas).__name__} backend")
 
         # managed_canvas safely initializes termios settings and alternate screen

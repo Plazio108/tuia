@@ -19,11 +19,11 @@ class Window:
     but pipes all drawing and rendering natively into gleaf.
     """
 
-    def __init__(self, tui_engine: "TUIApp"):
+    def __init__(self, tui_engine: "TUIApp", backend: str = "auto"):
         self.tui_engine = tui_engine
 
         # Use gleaf's auto-resolution for the best available backend
-        self.canvas = TerminalCanvas(backend="rich")
+        self.canvas = TerminalCanvas(backend=backend)
 
         self._active_attr = Modifiers.NORMAL
         self._lock = threading.Lock()
