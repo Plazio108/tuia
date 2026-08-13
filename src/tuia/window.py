@@ -23,7 +23,7 @@ class Window:
         self.tui_engine = tui_engine
 
         # Use gleaf's auto-resolution for the best available backend
-        self.canvas = TerminalCanvas(backend="pure")
+        self.canvas = TerminalCanvas(backend="rich")
 
         self._active_attr = Modifiers.NORMAL
         self._lock = threading.Lock()
