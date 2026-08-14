@@ -352,10 +352,7 @@ class TUIApp:
             self._ui_wakeup.wait(self._frame_time - elapsed)
 
     def run_task(
-        self,
-        func: Callable[..., Any],
-        *args,
-        **kwargs,
+        self, func: Callable[..., Any], *args, cancel_function=lambda: None, **kwargs
     ) -> Any:
         if not self.is_ui_thread():
             raise RuntimeError("run_task() must be called from the UI thread")
@@ -384,7 +381,8 @@ class TUIApp:
         try:
             while self.running and not finished.is_set():
                 self._run_one_frame()
-                self.LOG.debug("foreground task running")
+        except BaseException:
+            cancel_function()
         finally:
             thread.join()
 
