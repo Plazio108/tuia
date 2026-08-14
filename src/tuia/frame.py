@@ -1,16 +1,18 @@
 """
 tuia.frame - Frame container widget with customizable borders and titles.
 """
+
 import curses
+
 from tuia.base import Widget
 from tuia.layout import compute_layout
 
 # Border Style Definitions: (top_left, top_right, bottom_left, bottom_right, horiz, vert)
 BORDER_NONE = None
-BORDER_SINGLE = ('┌', '┐', '└', '┘', '─', '│')
-BORDER_DOUBLE = ('╔', '╗', '╚', '╝', '═', '║')
-BORDER_ROUNDED = ('╭', '╮', '╰', '╯', '─', '│')
-BORDER_ASCII = ('+', '+', '+', '+', '-', '|')
+BORDER_SINGLE = ("┌", "┐", "└", "┘", "─", "│")
+BORDER_DOUBLE = ("╔", "╗", "╚", "╝", "═", "║")
+BORDER_ROUNDED = ("╭", "╮", "╰", "╯", "─", "│")
+BORDER_ASCII = ("+", "+", "+", "+", "-", "|")
 
 
 class Frame(Widget):
@@ -19,9 +21,20 @@ class Frame(Widget):
     and render preset or custom border styles with optional titles.
     """
 
-    def __init__(self, parent=None, title="", border_style=BORDER_SINGLE,
-                 x=0, y=0, width=10, height=3, z_index=0):
-        super().__init__(parent=parent, x=x, y=y, width=width, height=height, z_index=z_index)
+    def __init__(
+        self,
+        parent=None,
+        title="",
+        border_style=BORDER_SINGLE,
+        x=0,
+        y=0,
+        width=10,
+        height=3,
+        z_index=0,
+    ):
+        super().__init__(
+            parent=parent, x=x, y=y, width=width, height=height, z_index=z_index
+        )
         self.title = title
         self.border_style = border_style
 
@@ -71,7 +84,7 @@ class Frame(Widget):
 
             # Horizontal borders
             if self.width > 0:
-                line = (h * self.width)[:self.width]
+                line = (h * self.width)[: self.width]
                 try:
                     self.window.addstr(0, 0, line)
                 except curses.error:
@@ -106,8 +119,7 @@ class Frame(Widget):
             except curses.error:
                 pass
             try:
-                self.window.addstr(max(0, self.height - 1),
-                                   max(0, self.width - 1), br)
+                self.window.addstr(max(0, self.height - 1), max(0, self.width - 1), br)
             except curses.error:
                 pass
 
