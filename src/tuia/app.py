@@ -348,6 +348,7 @@ class TUIApp:
         while not self._input_queue.empty():
             try:
                 raw_key = self._input_queue.get_nowait()
+                self.LOG.debug(f"Key pressed : {raw_key}")
                 if raw_key == Keys.CTRL_C:
                     raise KeyboardInterrupt
                 if self.ignore_input:
