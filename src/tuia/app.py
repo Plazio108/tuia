@@ -384,6 +384,7 @@ class TUIApp:
         try:
             while self.running and not finished.is_set():
                 self._run_one_frame()
+                self.LOG.debug("foreground task running")
         finally:
             thread.join()
 
