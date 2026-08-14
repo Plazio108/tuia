@@ -176,6 +176,7 @@ class TUIApp:
 
     def _run_background_loop(self):
         self._ui_thread_id = threading.get_ident()
+        raise_error = None
         try:
             while self.running and not self._background_stop.is_set():
                 loop_start = time.monotonic()
@@ -199,7 +200,8 @@ class TUIApp:
             if self._ui_thread_id == threading.get_ident():
                 self._ui_thread_id = None
             self._background_finished.set()
-            self._run_on_main_thread(raise_error)
+            if raise_error:
+                self._run_on_main_thread(raise_error)
             self._ui_wakeup.set()
 
     def stop_background_loop(self):
