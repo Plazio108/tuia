@@ -340,6 +340,58 @@ class TUIApp:
         self._update()
         self._render()
 
+    def _run_one_frame(self):
+        loop_start = time.monotonic()
+
+        self._ui_wakeup.clear()
+        self.loop()
+
+        elapsed = time.monotonic() - loop_start
+
+        if elapsed < self._frame_time:
+            self._ui_wakeup.wait(self._frame_time - elapsed)
+
+    def run_task(
+        self,
+        func: Callable[..., Any],
+        *args,
+        **kwargs,
+    ) -> Any:
+        if not self.is_ui_thread():
+            raise RuntimeError("run_task() must be called from the UI thread")
+
+        result: list[Any] = []
+        exception: list[BaseException] = []
+        finished = threading.Event()
+
+        def worker():
+            try:
+                result.append(func(*args, **kwargs))
+            except BaseException as exc:
+                exception.append(exc)
+            finally:
+                finished.set()
+                self._ui_wakeup.set()
+
+        thread = threading.Thread(
+            target=worker,
+            args=(),
+            daemon=True,
+            name=f"TUI-task-{func.__name__}",
+        )
+        thread.start()
+
+        try:
+            while self.running and not finished.is_set():
+                self._run_one_frame()
+        finally:
+            thread.join()
+
+        if exception:
+            raise exception[0]
+
+        return result[0] if result else None
+
     # ==========================================================
     # INPUT, UPDATE, RENDER
     # ==========================================================
@@ -349,10 +401,10 @@ class TUIApp:
             try:
                 raw_key = self._input_queue.get_nowait()
                 self.LOG.debug(f"Key pressed : {raw_key}")
-                # if raw_key == Keys.CTRL_C:
-                #     raise KeyboardInterrupt
                 if self.ignore_input:
                     continue
+                if raw_key == Keys.CTRL_C:
+                    raise KeyboardInterrupt
                 if self.root_frame:
                     self.root_frame.handle_event(raw_key)
             except queue.Empty:
